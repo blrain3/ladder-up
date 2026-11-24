@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}入会申请{% endblock %}
+{% block content %}
+<div class="row"><div class="col-sm-8 col-md-5">
+  <h1>入会申请</h1>
+  <form method="post" action="/apply">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% for name, label, kind, length in [
+      ('student_no', '学号', 'text', 20), ('name', '姓名', 'text', 50),
+      ('major', '专业', 'text', 80), ('grade', '入学年份', 'text', 4),
+      ('phone', '手机', 'tel', 20), ('email', '邮箱', 'email', 120)] %}
+    <div class="form-group">
+      <label for="{{ name }}">{{ label }}</label>
+      <input class="form-control" id="{{ name }}" name="{{ name }}" type="{{ kind }}" maxlength="{{ length }}"
+        {% if name in ('student_no', 'name') %}required{% endif %}
+        {% if name == 'grade' %}inputmode="numeric" pattern="[0-9]{4}"{% endif %}>
+    </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">提交申请</button>
+  </form>
+</div></div>
+{% endblock %}
