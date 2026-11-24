@@ -1,5 +1,4 @@
 import os
-import secrets
 import sys
 from pathlib import Path
 
@@ -15,7 +14,6 @@ from app.config import Settings
 from app.db import SessionLocal, make_engine
 from app.models import Department, Member, MemberPermission, PermissionPoint, SysConfig
 from app.models.base import local_time
-
 
 DEFAULT_PERMISSIONS = {
     "member": ("member:read:self", "problem:read", "training:read:self", "checkin:write:self"),
@@ -39,6 +37,7 @@ def insert_missing(session, model, keys, **values):
 def seed(database_url: str):
     engine = make_engine(database_url)
     now = local_time()
+    password_table = []
     try:
         with SessionLocal(bind=engine) as session, session.begin():
             for name, kind in (
@@ -65,19 +64,32 @@ def seed(database_url: str):
             for student_no, name, role, dept, kind, status in members:
                 member = session.scalar(select(Member).where(Member.student_no == student_no))
                 if member is not None:
+                    password_table.append((student_no, role, "已存在，不重置"))
                     continue
-                password = secrets.token_urlsafe(24)
                 if role == "sys_admin":
                     password = os.environ.get("SEED_ADMIN_PASSWORD")
-                    if not password:
+                    if password:
+                        source = "SEED_ADMIN_PASSWORD"
+                    elif os.environ.get("APP_ENV") == "demo":
                         print("WARNING: SEED_ADMIN_PASSWORD 未设置，使用默认管理员密码。", file=sys.stderr)
                         password = "ChangeMe123!"
+                        source = "默认值"
+                    else:
+                        raise RuntimeError("SEED_ADMIN_PASSWORD is required unless APP_ENV=demo")
+                else:
+                    password = os.environ.get("SEED_DEMO_PASSWORD")
+                    if password:
+                        source = "SEED_DEMO_PASSWORD"
+                    else:
+                        password = "Demo1234!"
+                        source = "默认值"
                 password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
                 member = Member(student_no=student_no, name=name, role=role, member_type=kind,
                                 member_status=status, dept_id=departments[dept],
                                 password_hash=password_hash, created_at=now, updated_at=now)
                 session.add(member)
                 session.flush()
+                password_table.append((student_no, role, source))
                 grants = permissions if role == "sys_admin" else DEFAULT_PERMISSIONS[role]
                 for code in grants:
                     session.add(MemberPermission(member_id=member.id, permission_id=permissions[code],
@@ -91,6 +103,10 @@ def seed(database_url: str):
                                config_value=value, updated_at=now)
     finally:
         engine.dispose()
+
+    print("学号 / 角色 / 密码来源", file=sys.stderr)
+    for student_no, role, source in password_table:
+        print(f"{student_no} / {role} / {source}", file=sys.stderr)
 
 
 if __name__ == "__main__":

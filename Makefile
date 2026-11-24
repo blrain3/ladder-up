@@ -24,7 +24,7 @@ APP_ENV ?= development
 SESSION_TTL_HOURS ?= 8
 export DATABASE_URL APP_ENV SESSION_TTL_HOURS
 
-.PHONY: install migrate seed test smoke backup restore-check run
+.PHONY: install migrate seed test lint cov check smoke backup restore-check run
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -38,6 +38,14 @@ seed:
 
 test:
 	$(PYTEST) -q
+
+lint:
+	$(PYTHON) -m ruff check app bin tests scripts
+
+cov:
+	$(PYTEST) --cov=app --cov-report=term-missing --cov-fail-under=80
+
+check: lint test smoke
 
 backup:
 	$(PYTHON) bin/backup.py

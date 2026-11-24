@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = [".venv", "alembic/versions", "data", "backups"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C4"]
+ignore = [
+  "E501",  # 行长由格式化负责，注释与中文文案不强制
+  "B008",  # FastAPI 依赖注入惯用 Depends() 作为默认值
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]        # 测试里先插 sys.path 再导入
+"scripts/*" = ["E402"]
+"bin/*" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

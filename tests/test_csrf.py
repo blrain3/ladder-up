@@ -24,7 +24,7 @@ def test_anon_mismatch_does_not_revoke_session(client, signed_in, application_fo
     assert client.get("/members").status_code == 200
 
 
-def test_anon_matching_double_submit_redirects(client, application_form):
+def test_anon_matching_double_submit_shows_receipt(client, application_form):
     response = client.post("/apply", data=application_form())
-    assert response.status_code == 303
-    assert response.headers["location"] == "/apply/success"
+    assert response.status_code == 200
+    assert 'id="receipt-code"' in response.text

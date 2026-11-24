@@ -31,6 +31,7 @@ class Member(Base):
     member_status: Mapped[str] = mapped_column(Text)
     dept_id: Mapped[int | None] = mapped_column(ForeignKey("department.id", name="fk_member_dept"))
     joined_on: Mapped[str | None] = mapped_column(Text)
+    must_change_password: Mapped[int] = mapped_column(Integer, server_default="0")
     left_on: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[str] = mapped_column(Text)
@@ -43,6 +44,7 @@ class MemberApplication(Base):
         CheckConstraint("active_flag = '1'", name="ck_app_active_flag"),
         Index("idx_app_status", "status", "created_at"),
         Index("uk_app_active", "student_no", "apply_type", "active_flag", unique=True),
+        Index("uk_app_receipt_code_hash", "receipt_code_hash", unique=True),
         {"sqlite_autoincrement": True},
     )
 
@@ -56,6 +58,7 @@ class MemberApplication(Base):
     apply_type: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text)
     active_flag: Mapped[str | None] = mapped_column(Text)
+    receipt_code_hash: Mapped[str | None] = mapped_column(Text)
     interview_note: Mapped[str | None] = mapped_column(Text)
     interviewed_at: Mapped[str | None] = mapped_column(Text)
     review_note: Mapped[str | None] = mapped_column(Text)

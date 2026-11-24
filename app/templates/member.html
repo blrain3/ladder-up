@@ -2,16 +2,47 @@
 {% block title %}{{ profile.name }}{% endblock %}
 {% block content %}
 <a href="/members">返回会员列表</a>
-<h1>{{ profile.name }}</h1>
-<dl class="dl-horizontal">
-  <dt>学号</dt><dd>{{ profile.student_no }}</dd>
-  <dt>部门</dt><dd>{{ profile.department or '—' }}</dd>
-  <dt>专业</dt><dd>{{ profile.major or '—' }}</dd>
-  <dt>入学年份</dt><dd>{{ profile.grade or '—' }}</dd>
-  <dt>会员类型</dt><dd>{{ profile.member_type }}</dd>
-  <dt>状态</dt><dd>{{ profile.member_status }}</dd>
-  <dt>入会日期</dt><dd>{{ profile.joined_on or '—' }}</dd>
-  <dt>手机</dt><dd>{{ profile.phone or '—' }}</dd>
-  <dt>邮箱</dt><dd>{{ profile.email or '—' }}</dd>
-</dl>
+<div class="row">
+  <div class="col-sm-8">
+    <h1>{{ profile.name }}</h1>
+    <dl class="dl-horizontal">
+      <dt>学号</dt><dd>{{ profile.student_no }}</dd>
+      <dt>部门</dt><dd>{{ profile.department or '—' }}</dd>
+      <dt>专业</dt><dd>{{ profile.major or '—' }}</dd>
+      <dt>入学年份</dt><dd>{{ profile.grade or '—' }}</dd>
+      <dt>会员类型</dt><dd>{{ profile.member_type }}</dd>
+      <dt>状态</dt><dd>{{ profile.member_status }}</dd>
+      <dt>入会日期</dt><dd>{{ profile.joined_on or '—' }}</dd>
+      <dt>手机</dt><dd>{{ profile.phone or '—' }}</dd>
+      <dt>邮箱</dt><dd>{{ profile.email or '—' }}</dd>
+    </dl>
+    <p><a class="btn btn-default" href="/members/{{ profile.id }}/card">查看会员证</a></p>
+  </div>
+  <div class="col-sm-4">
+    <h2>照片</h2>
+    {% if profile.photo_attachment_id %}
+    <img class="img-thumbnail" src="/files/{{ profile.photo_attachment_id }}" alt="会员照片"
+         style="max-width: 200px;">
+    {% else %}
+    <p class="text-muted">暂无照片</p>
+    {% endif %}
+
+    {% if profile.can_write %}
+    <form method="post" enctype="multipart/form-data" action="/members/{{ profile.id }}/photo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label for="photo-file">上传照片（JPEG / PNG，≤ 5 MB）</label>
+        <input class="form-control" id="photo-file" name="file" type="file" accept="image/jpeg,image/png">
+      </div>
+      <button class="btn btn-primary" type="submit">上传照片</button>
+    </form>
+    {% if profile.photo_attachment_id %}
+    <form method="post" action="/members/{{ profile.id }}/photo/delete">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-link" type="submit">删除照片</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}入会申请审核{% endblock %}
+{% block content %}
+<h1>入会申请审核</h1>
+<form method="get" action="/admin/applications" class="form-inline">
+  <div class="form-group">
+    <label for="status">状态</label>
+    <select class="form-control" id="status" name="status">
+      <option value="">全部</option>
+      {% for item in statuses %}
+      <option value="{{ item }}" {% if current_status == item %}selected{% endif %}>{{ item }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit">筛选</button>
+</form>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>编号</th><th>学号</th><th>姓名</th><th>类型</th><th>状态</th>
+      <th>提交时间</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in pagination["items"] %}
+    <tr>
+      <td>{{ item.id }}</td>
+      <td>{{ item.student_no }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.apply_type }}</td>
+      <td>{{ item.status }}</td>
+      <td>{{ item.created_at }}</td>
+      <td>
+        {% if not can_approve %}
+        —
+        {% elif item.status == '待审核' %}
+        <form method="post" action="/admin/applications/{{ item.id }}/review">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="form-group">
+            <textarea class="form-control" name="review_note" rows="2" placeholder="审核意见"></textarea>
+          </div>
+          <button class="btn btn-success btn-sm" name="result" value="通过" type="submit">通过</button>
+          <button class="btn btn-danger btn-sm" name="result" value="拒绝" type="submit">拒绝</button>
+        </form>
+        {% elif item.status == '待面试' %}
+        <form method="post" action="/admin/applications/{{ item.id }}/interview">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="form-group">
+            <textarea class="form-control" name="interview_note" rows="2" placeholder="面试意见"></textarea>
+          </div>
+          <button class="btn btn-success btn-sm" name="result" value="通过" type="submit">面试通过</button>
+          <button class="btn btn-danger btn-sm" name="result" value="不通过" type="submit">面试不通过</button>
+        </form>
+        {% elif item.status == '已面试' %}
+        <form method="post" action="/admin/applications/{{ item.id }}/admit">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="form-group">
+            <select class="form-control" name="dept_id">
+              <option value="">不指定部门</option>
+              {% for department in departments %}
+              <option value="{{ department.id }}">{{ department.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" type="submit">录取</button>
+        </form>
+        {% else %}
+        <span class="text-muted">已终态</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7">暂无申请</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p>共 {{ pagination.total }} 条，第 {{ pagination.page }} 页 / 每页 {{ pagination.size }} 条</p>
+{% if pagination.page > 1 %}
+<a href="/admin/applications?page={{ pagination.page - 1 }}&size={{ pagination.size }}&status={{ current_status|urlencode }}">上一页</a>
+{% endif %}
+{% if pagination.page * pagination.size < pagination.total %}
+<a href="/admin/applications?page={{ pagination.page + 1 }}&size={{ pagination.size }}&status={{ current_status|urlencode }}">下一页</a>
+{% endif %}
+{% endblock %}
