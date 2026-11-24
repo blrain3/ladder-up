@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}录分{% endblock %}
+{% block content %}
+<h1>录分：{{ scores.test.title }}</h1>
+<p>{{ scores.test.test_type }} · {{ scores.test.held_on }}</p>
+
+<form id="assessment-score-form" method="post" action="/assessment-tests/{{ scores.test.id }}/scores">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr><th>学号</th><th>姓名</th><th>已解出题数</th><th>分数（0–9999.99）</th></tr>
+      </thead>
+      <tbody>
+        {% for item in scores["items"] %}
+        <tr>
+          <td>{{ item.student_no }}<input type="hidden" name="member_ids" value="{{ item.id }}"></td>
+          <td>{{ item.name }}
+            <input type="hidden" name="version_{{ item.id }}" value="{{ item.version }}">
+            <input type="hidden" name="old_solved_{{ item.id }}"
+                   value="{{ item.solved_count if item.solved_count is not none else '' }}">
+            <input type="hidden" name="old_score_{{ item.id }}" value="{{ item.score or '' }}">
+          </td>
+          <td>
+            <input class="form-control" name="solved_{{ item.id }}" type="number"
+                   min="0" step="1" value="{{ item.solved_count if item.solved_count is not none else '' }}">
+          </td>
+          <td>
+            <input class="form-control" name="score_{{ item.id }}" type="number"
+                   min="0" max="9999.99" step="0.01" value="{{ item.score or '' }}">
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">暂无数据</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if scores["items"] %}
+  <button type="submit" class="btn btn-primary">保存成绩</button>
+  {% endif %}
+</form>
+<script src="/static/assessment-scores.js" defer></script>
+<nav aria-label="分页">
+  {% if scores.links.previous %}<a href="{{ scores.links.previous }}">上一页</a>{% endif %}
+  {% if scores.links.next %}<a href="{{ scores.links.next }}">下一页</a>{% endif %}
+</nav>
+{% endblock %}

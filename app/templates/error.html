@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}请求失败{% endblock %}
 {% block content %}
-  {% if error_code in (40101, 40002) and request.url.path != '/apply' %}
+  {% if error_code == 50001 and request.url.path == '/assessments/run' %}
+  <p role="alert">{{ error_code }} · request_id {{ request.state.request_id }}</p>
+  {% elif error_code in (40101, 40002) and request.url.path != '/apply' %}
   <a href="/login">返回登录</a>
   {% elif request.url.path == '/apply' %}
   <a href="/apply">返回申请页</a>

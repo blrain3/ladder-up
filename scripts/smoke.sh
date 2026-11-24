@@ -256,12 +256,22 @@ if grep -Fq 'javascript:' "$work/body.json"; then
     exit 1
 fi
 
+read -r term phase_start phase_end < <("$python" - <<'PYTERM'
+import os
+from app.assessment import current_term, term_interval
+from app.db import SessionLocal, make_engine
+with SessionLocal(bind=make_engine(os.environ["DATABASE_URL"])) as session:
+    term = current_term(session)
+    print(term, *term_interval(term))
+PYTERM
+)
+
 # S4 训练：计划、阶段、冻结指派、逐题打卡、进度、拒绝访问与原行补卡。
-expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d term=2026-2027-1 "$url/training-plans"
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "term=$term" "$url/training-plans"
 plan_id=$(json_field data id)
-[[ "$plan_id" =~ ^[1-9][0-9]*$ && $(json_field data term) == 2026-2027-1 ]]
+[[ "$plan_id" =~ ^[1-9][0-9]*$ && $(json_field data term) == "$term" ]]
 expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "plan_id=$plan_id" \
-    --data-urlencode 'name=训练烟测阶段' -d start_on=2026-09-01 -d end_on=2027-01-31 "$url/training-phases"
+    --data-urlencode 'name=训练烟测阶段' -d "start_on=$phase_start" -d "end_on=$phase_end" "$url/training-phases"
 phase_id=$(json_field data id)
 [[ "$phase_id" =~ ^[1-9][0-9]*$ && $(json_field data name) == 训练烟测阶段 ]]
 
@@ -332,4 +342,81 @@ with sqlite3.connect(os.environ["DATABASE_URL"].removeprefix("sqlite:///")) as c
 assert json.loads(audit[0])["note"] == "烟测补卡"
 PYCHECKIN
 
-echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow"
+# S5：补一题已完成的训练，令 demo0001 的进度达到 2/3。
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "phase_id=$phase_id" \
+    --data-urlencode 'title=转正烟测任务' -d "problem_ids=$problem_id" "$url/training-tasks"
+extra_task=$(json_field data id)
+[[ "$extra_task" =~ ^[1-9][0-9]*$ && $(json_field data title) == 转正烟测任务 ]]
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode 'assignee_type=指定会员' -d "member_ids=$demo1_id" "$url/training-tasks/$extra_task/assign"
+[[ $(json_field data status) == 已下发 && $(json_field data assignees) == 1 ]]
+expect_http 200 -b "$work/member.jar" -d "csrf_token=$demo1_csrf" -d "task_id=$extra_task" \
+    -d "checkin_date=$today" -d solved_count=1 -d "solved_problem_ids=$problem_id" "$url/checkins"
+[[ $(json_field data solved_count) == 1 ]]
+
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode 'title=S5 烟测周测' --data-urlencode 'test_type=周测' \
+    -d "held_on=$phase_start" "$url/assessment-tests"
+test_id=$(json_field data id)
+[[ "$test_id" =~ ^[1-9][0-9]*$ && $(json_field data title) == 'S5 烟测周测' ]]
+expect_http 200 -b "$work/demo2.jar" "$url/me"
+demo2_id=$(json_field data id)
+demo2_csrf=$(json_field data csrf_token)
+demo2_status=$(json_field data member_status)
+[[ $(json_field data student_no) == demo0002 && "$demo2_status" == 正式会员 ]]
+expect_http 200 -b "$work/coach.jar" -H "X-CSRF-Token: $coach_csrf" -H 'Content-Type: application/json' \
+    -d "{\"rows\":[{\"member_id\":$demo1_id,\"version\":0,\"solved_count\":2,\"score\":90},{\"member_id\":$demo2_id,\"version\":0,\"solved_count\":0,\"score\":50}]}" \
+    "$url/assessment-tests/$test_id/scores"
+[[ $(json_field data created) == 2 && $(json_field data updated) == 0 ]]
+expect_http 200 -b "$work/coach.jar" "$url/assessment-tests/$test_id/scores"
+"$python" - "$work/body.json" "$demo1_id" "$demo2_id" <<'PYSCORES'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as body:
+    rows = {row["id"]: row for row in json.load(body)["data"]["items"]}
+assert rows[int(sys.argv[2])]["score"] == "90.00"
+assert rows[int(sys.argv[3])]["solved_count"] == 0
+PYSCORES
+
+expect_http 200 -b "$work/admin.jar" -d "csrf_token=$admin_csrf" -d "term=$term" "$url/assessments/run"
+[[ $(json_field data passed) == 1 && $(json_field data created) -ge 2 ]]
+expect_http 200 -b "$work/admin.jar" "$url/promotions?term=$term"
+"$python" - "$work/body.json" "$demo1_id" <<'PYPROMOTE'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as body:
+    row, = (row for row in json.load(body)["data"]["items"] if row["id"] == int(sys.argv[2]))
+assert row["student_no"] == "demo0001" and row["ready"] and row["assessment_result"] == "通过"
+assert (row["completion_solved"], row["completion_total"]) == (2, 3)
+PYPROMOTE
+expect_http 200 -b "$work/admin.jar" -d "csrf_token=$admin_csrf" -d "term=$term" "$url/members/$demo1_id/promote"
+[[ $(json_field data member_status) == 正式会员 ]]
+expect_http 200 -b "$work/member.jar" "$url/me"
+[[ $(json_field data member_status) == 正式会员 ]]
+
+expect_http 200 -b "$work/demo2.jar" -d "csrf_token=$demo2_csrf" "$url/members/$demo2_id/leave"
+[[ $(json_field data status) == 待审核 && $(json_field data member_status) == "$demo2_status" ]]
+expect_http 200 -b "$work/demo2.jar" "$url/me"
+[[ $(json_field data member_status) == "$demo2_status" ]]
+expect_http 200 -b "$work/admin.jar" -d "csrf_token=$admin_csrf" "$url/members/$demo2_id/leave/approve"
+[[ $(json_field data status) == 已通过 && $(json_field data member_status) == 已退会 ]]
+expect_http 200 -b "$work/admin.jar" "$url/members/$demo2_id"
+[[ $(json_field data member_status) == 已退会 ]]
+expect_http 401 -b "$work/demo2.jar" "$url/me"
+[[ $(json_field code) == 40101 ]]
+
+expect_http 303 -c "$work/demo3.jar" -d student_no=demo0003 \
+    --data-urlencode "password=$SEED_DEMO_PASSWORD" "$url/auth/login"
+expect_http 200 -b "$work/demo3.jar" "$url/me"
+demo3_id=$(json_field data id)
+[[ $(json_field data student_no) == demo0003 ]]
+expect_http 200 -b "$work/admin.jar" -d "csrf_token=$admin_csrf" \
+    --data-urlencode 'reason=烟测确认会员多次违反协会管理规定' "$url/members/$demo3_id/expel"
+[[ $(json_field data member_status) == 已除名 ]]
+expect_http 200 -b "$work/admin.jar" "$url/members/$demo3_id"
+[[ $(json_field data member_status) == 已除名 ]]
+expect_http 401 -b "$work/demo3.jar" "$url/me"
+[[ $(json_field code) == 40101 ]]
+expect_http 401 -d student_no=demo0003 \
+    --data-urlencode "password=$SEED_DEMO_PASSWORD" "$url/auth/login"
+[[ $(json_field code) == 40101 ]]
+
+echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow, S5 assessment and membership flow"

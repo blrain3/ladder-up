@@ -258,3 +258,110 @@ def training_api(client, signed_in, coach, accounts, engine):
         "problems": problems, "plan": plan, "phase": phase, "task": task,
         "assign": assign, "member_csrf": member_csrf, "checkin": checkin,
     }
+
+
+@pytest.fixture
+def assessment_api(training_api, admin, engine, monkeypatch):
+    """S5 考核 API 工厂：用管理员令牌写训练与测评，跑考核同样走管理员."""
+    from datetime import datetime
+
+    from app import assessment
+    from app.db import SessionLocal
+    from app.models import Member, SysConfig
+    from app.models.base import local_time
+
+    class AssessmentClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 11, 24, 12, tzinfo=tz)
+
+    monkeypatch.setattr(assessment, "datetime", AssessmentClock)
+    api = dict(training_api)
+    client = api["client"]
+    admin_csrf = api["member_csrf"]("admin0001")
+
+    def current_admin_csrf():
+        return api["member_csrf"]("admin0001")
+
+    with SessionLocal(bind=engine) as session, session.begin():
+        session.merge(SysConfig(
+            config_key="academic_year.current", config_value="2026-2027",
+            updated_at=local_time(),
+        ))
+        student = session.get(Member, api["ids"]["student01"])
+        student.member_status = "观察会员"
+        student.member_type = "观察会员"
+
+    def plan(term="2026-2027-1", **extra):
+        response = client.post(
+            "/training-plans", json={"term": term, **extra},
+            headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def phase(plan_id, name="基础", start_on="2026-09-01", end_on="2027-01-31"):
+        response = client.post(
+            "/training-phases",
+            json={"plan_id": plan_id, "name": name, "start_on": start_on, "end_on": end_on},
+            headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def task(phase_id, problem_ids, title="周任务", **extra):
+        payload = {"phase_id": phase_id, "title": title, "problem_ids": problem_ids, **extra}
+        response = client.post(
+            "/training-tasks", json=payload, headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def assign(task_id, assignee_type, *, member_ids=None, team_ids=None, expect=200):
+        payload = {"assignee_type": assignee_type}
+        if member_ids is not None:
+            payload["member_ids"] = member_ids
+        if team_ids is not None:
+            payload["team_ids"] = team_ids
+        response = client.post(
+            f"/training-tasks/{task_id}/assign", json=payload,
+            headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == expect, response.text
+        return response
+
+    def create_test(title="第一周周测", test_type="周测", held_on="2026-11-20"):
+        response = client.post(
+            "/assessment-tests",
+            json={"title": title, "test_type": test_type, "held_on": held_on},
+            headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def record(test_id, rows):
+        csrf = current_admin_csrf()
+        path = f"/assessment-tests/{test_id}/scores"
+        snapshot = client.get(path).json()["data"]["items"]
+        versions = {row["id"]: row["version"] for row in snapshot}
+        rows = [{"version": versions[row["member_id"]], **row} for row in rows]
+        response = client.post(
+            path, json={"rows": rows}, headers={"X-CSRF-Token": csrf},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]
+
+    def run_assess(term="2026-2027-1"):
+        response = client.post(
+            "/assessments/run", json={"term": term},
+            headers={"X-CSRF-Token": current_admin_csrf()},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]
+
+    api.update({
+        "admin_csrf": admin_csrf, "engine": engine,
+        "plan": plan, "phase": phase, "task": task, "assign": assign,
+        "create_test": create_test, "record": record, "run_assess": run_assess,
+    })
+    return api

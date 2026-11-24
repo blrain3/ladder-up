@@ -1,3 +1,4 @@
+from .assessment import AssessmentTest, JobRun, MemberAssessment, TestScore
 from .attachment import Attachment
 from .audit import AuditLog
 from .auth import MemberPermission, MemberSession, PermissionPoint
@@ -17,8 +18,8 @@ from .training import (
 )
 
 __all__ = [
-    "Attachment", "AuditLog", "Base", "Checkin", "CheckinProblem", "Department",
-    "KnowledgePoint", "Member", "MemberApplication", "MemberPermission", "MemberSession",
-    "PermissionPoint", "Problem", "ProblemKp", "ProblemSolution", "SysConfig",
+    "AssessmentTest", "Attachment", "AuditLog", "Base", "Checkin", "CheckinProblem", "Department", "JobRun",
+    "KnowledgePoint", "Member", "MemberApplication", "MemberAssessment", "MemberPermission", "MemberSession",
+    "PermissionPoint", "Problem", "ProblemKp", "ProblemSolution", "SysConfig", "TestScore",
     "TaskAssignee", "TaskProblem", "TrainingPhase", "TrainingPlan", "TrainingTask",
 ]
