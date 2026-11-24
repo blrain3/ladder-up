@@ -9,16 +9,20 @@ from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
+from .auth import active_member
 from .config import Settings
-from .db import database_path, get_session, make_engine
+from .db import SessionLocal, database_path, get_session, make_engine
+from .models import Member
 from .routes import router
+from .security import load_session
 from .web import APP_DIR, page, wants_html
 
 
@@ -39,6 +43,7 @@ async def lifespan(app: FastAPI):
     settings = Settings.from_env()
     app.state.settings = settings
     app.state.database_file = database_path(settings.database_url)
+    app.state.uploads_dir = Path(settings.uploads_dir)
     engine = make_engine(settings.database_url)
     app.state.engine = engine
 
@@ -60,6 +65,16 @@ app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 app.include_router(router)
 
 
+def requires_password_change(request, token):
+    with SessionLocal(bind=request.app.state.engine) as session:
+        current = load_session(token, session=session)
+        member = session.get(Member, current.member_id) if current else None
+        if active_member(member) and member.must_change_password:
+            request.state.member_id = member.id
+            return True
+        return False
+
+
 @app.middleware("http")
 async def log_request(request: Request, call_next):
     started = perf_counter()
@@ -67,10 +82,17 @@ async def log_request(request: Request, call_next):
     request.state.request_id = request_id
     status = 500
     try:
-        response = await call_next(request)
+        path = request.url.path
+        token = request.cookies.get("sid")
+        if (token and request.method in {"GET", "POST", "PUT", "PATCH", "DELETE"}
+                and path not in {"/me/password", "/auth/logout"}
+                and await run_in_threadpool(requires_password_change, request, token)):
+            response = RedirectResponse("/me/password", status_code=303, headers={"Cache-Control": "no-store"})
+        else:
+            response = await call_next(request)
         status = response.status_code
         response.headers["X-Request-ID"] = request_id
-        if not request.url.path.startswith("/static/"):
+        if not request.url.path.startswith(("/static/", "/files/")):
             response.headers["Cache-Control"] = "no-store"
         return response
     finally:

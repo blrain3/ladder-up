@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import select
 
 from app.db import SessionLocal
@@ -5,12 +6,12 @@ from app.models import AuditLog, MemberSession
 from app.security import token_digest
 
 
-def test_login_success_sets_a_secure_cookie(client, accounts, signed_in, engine):
+def test_login_success_sets_a_session_cookie(client, accounts, signed_in, engine):
     ids, _ = accounts
     signed_in(client)
     token = client.cookies["sid"]
     cookie = next(cookie for cookie in client.cookies.jar if cookie.name == "sid")
-    assert cookie.secure and cookie.path == "/"
+    assert not cookie.secure and cookie.path == "/"
     assert cookie.has_nonstandard_attr("HttpOnly")
     assert cookie.get_nonstandard_attr("SameSite") == "lax"
     assert client.get("/").headers["location"] == "/members"
@@ -54,3 +55,23 @@ def test_logout_revokes_cookie(client, signed_in, engine):
     assert response.json()["code"] == 40101
     with SessionLocal(bind=engine) as session:
         assert session.scalar(select(AuditLog.action).where(AuditLog.action == "auth.logout"))
+
+
+@pytest.mark.parametrize(("app_env", "override", "secure"), [
+    ("test", None, False), ("production", None, True),
+    ("production", "false", False), ("test", "true", True),
+])
+def test_cookie_secure_configuration(client_factory, accounts, monkeypatch, app_env, override, secure):
+    monkeypatch.setenv("APP_ENV", app_env)
+    if override is not None:
+        monkeypatch.setenv("COOKIE_SECURE", override)
+    client = client_factory()
+    if not secure:
+        response = client.post(
+            "http://testserver/auth/login", json={"student_no": "student01", "password": accounts[1]},
+        )
+        assert client.get("http://testserver/me").status_code == 200
+    else:
+        response = client.post("/auth/login", json={"student_no": "student01", "password": accounts[1]})
+    assert response.status_code == 303
+    assert ("; Secure" in response.headers["Set-Cookie"]) is secure

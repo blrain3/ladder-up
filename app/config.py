@@ -7,6 +7,8 @@ class Settings:
     database_url: str
     app_env: str
     session_ttl_hours: int
+    uploads_dir: str
+    cookie_secure: bool
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -22,4 +24,10 @@ class Settings:
         except ValueError as exc:
             raise RuntimeError("SESSION_TTL_HOURS must be a positive integer") from exc
 
-        return cls(os.environ["DATABASE_URL"], os.environ["APP_ENV"], ttl)
+        uploads_dir = os.environ.get("UPLOADS_DIR", "data/uploads").strip() or "data/uploads"
+        app_env = os.environ["APP_ENV"]
+        cookie_secure = os.environ.get("COOKIE_SECURE", str(app_env == "production")).strip().lower()
+        if cookie_secure not in {"1", "true", "yes", "on", "0", "false", "no", "off"}:
+            raise RuntimeError("COOKIE_SECURE must be a boolean")
+        secure = cookie_secure in {"1", "true", "yes", "on"}
+        return cls(os.environ["DATABASE_URL"], app_env, ttl, uploads_dir, secure)

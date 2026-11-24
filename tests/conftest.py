@@ -2,8 +2,10 @@ import sys
 from pathlib import Path
 
 import pytest
-from alembic import command
 from alembic.config import Config
+from sqlalchemy import select
+
+from alembic import command
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -16,7 +18,9 @@ def database_url(tmp_path, monkeypatch):
     url = f"sqlite:///{tmp_path / 'app.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.delenv("COOKIE_SECURE", raising=False)
     monkeypatch.setenv("SESSION_TTL_HOURS", "8")
+    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path / "uploads"))
     command.upgrade(Config(str(ROOT / "alembic.ini")), "head")
     return url
 
@@ -97,6 +101,28 @@ def signed_in(accounts):
 
 
 @pytest.fixture
+def admin(accounts, engine):
+    from app.db import SessionLocal
+    from app.models import Department, Member
+    from app.models.base import local_time
+    from app.security import hash_password
+
+    password = "FixturePassword!"
+    now = local_time()
+    with SessionLocal(bind=engine) as session, session.begin():
+        department = session.scalar(select(Department).where(Department.name == "技术部"))
+        member = Member(
+            student_no="admin0001", name="系统管理员", role="sys_admin", dept_id=department.id,
+            member_type="管理会员", member_status="正式会员", password_hash=hash_password(password),
+            created_at=now, updated_at=now,
+        )
+        session.add(member)
+        session.flush()
+        member_id = member.id
+    return {"student_no": "admin0001", "id": member_id, "password": password}
+
+
+@pytest.fixture
 def application_form(client):
     import re
 
@@ -105,6 +131,9 @@ def application_form(client):
         assert response.status_code == 200
         token = re.search(r'name="csrf_token" value="([^"]+)"', response.text).group(1)
         assert token == client.cookies["csrf_anon"]
-        return {"student_no": "apply001", "name": "申请人", "csrf_token": token}
+        return {
+            "student_no": "202400000001", "name": "申请人", "agree_observation": "1",
+            "csrf_token": token,
+        }
 
     return load

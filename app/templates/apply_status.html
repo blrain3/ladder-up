@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}申请进度查询{% endblock %}
+{% block content %}
+<div class="row"><div class="col-sm-8 col-md-6">
+  <h1>申请进度查询</h1>
+  <form method="post" action="/apply/status" class="form-inline">
+    <div class="form-group">
+      <label for="receipt_code">查询回执码</label>
+      <input class="form-control" id="receipt_code" name="receipt_code" type="text"
+             autocomplete="off" maxlength="22" required>
+    </div>
+    <button class="btn btn-primary" type="submit">查询</button>
+  </form>
+
+  {% if queried %}
+    {% if result %}
+    <table class="table">
+      <tbody>
+        <tr><th>申请编号</th><td>{{ result.id }}</td></tr>
+        <tr><th>申请类型</th><td>{{ result.apply_type }}</td></tr>
+        <tr><th>当前状态</th><td>{{ result.status }}</td></tr>
+        <tr><th>提交时间</th><td>{{ result.created_at }}</td></tr>
+      </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-warning">未找到匹配的申请，请核对查询回执码。</div>
+    {% endif %}
+  {% endif %}
+</div></div>
+{% endblock %}

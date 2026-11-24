@@ -1,7 +1,16 @@
 {% extends "base.html" %}
 {% block title %}申请已提交{% endblock %}
 {% block content %}
-<h1>申请已提交</h1>
-<p>你的入会申请正在等待审核。</p>
-<a href="/login">返回登录</a>
+<div class="row"><div class="col-sm-8 col-md-6">
+  <h1>申请已提交</h1>
+  <p>你的入会申请已进入 <strong>待审核</strong> 状态。</p>
+  <p>申请编号 <strong>{{ application_no }}</strong></p>
+  <div class="alert alert-info">
+    请保存查询回执码（仅显示一次）<strong id="receipt-code">{{ receipt_code }}</strong>
+  </div>
+  <p>
+    <a class="btn btn-primary" href="/apply/status">查询申请进度</a>
+    <a class="btn btn-default" href="/apply">返回申请页</a>
+  </p>
+</div></div>
 {% endblock %}

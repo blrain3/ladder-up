@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta, timezone
-from hashlib import sha256
 import secrets
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from zoneinfo import ZoneInfo
 
 from passlib.hash import bcrypt
@@ -40,7 +40,7 @@ def token_digest(token: str) -> str:
 
 def create_session(member_id, ua, ip, *, session: Session, ttl_hours=8):
     token = secrets.token_urlsafe(32)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     local = ZoneInfo("Asia/Shanghai")
     format_time = "%Y-%m-%d %H:%M:%S"
     session.add(MemberSession(

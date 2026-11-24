@@ -6,7 +6,6 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
-
 SessionLocal = sessionmaker(expire_on_commit=False)
 
 
