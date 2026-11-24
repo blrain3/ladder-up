@@ -2,6 +2,21 @@
 
 格式参考 Keep a Changelog，版本遵循语义化版本（设计阶段用 0.x）。
 
+## [0.4.0] - 2026-11-24
+
+### 新增
+
+- `docs/review/gpt-review-v1.1.md`：第二轮复核（gpt-6.2-sol），76/100，指出 3 项开工阻塞
+
+### 修复（第二轮意见）
+
+- 数据库：统一索引写法（`KEY` 子句一律转 `CREATE INDEX`）；`member` 增 `role`；奖惩分改整数百分位；`member_application` 用 `active_flag` 实现单条活跃申请；`attachment` 增 `biz_type`/`biz_id`；`audit_log` 增 `request_id`；归档说明去掉不存在的 `academic_year` 字段
+- 接口：CSRF 三种载体（表单字段 / `X-CSRF-Token` / 匿名双提交 Cookie）；`logout` 语义；照片返回 `attachmentId`；面试提交即落库；打卡明细与 `solvedCount` 强校验；补卡按日期寻址；新增 50301 锁超时错误码；`job_run` 重复触发语义
+- 设计说明书：§6 定时任务改 systemd timer；§8 备份改 Online Backup、恢复演练提前到第 3 周、凭据说明去数据库账号
+- 项目计划：M1 纳入入会、M3 纳入恢复首验；周预算与切片对齐；裁剪需签核
+- 开发路线：`attachment` 随 S1 迁移；`make seed`/`make demo-seed` 区分；端口说明改容器内 8000 + 外部 443；S2/S4/S5 验收补匿名 CSRF、NF-05、首次恢复
+- 基线 §11 表数、§9 平台范围、§5.4 导出格式；ADR 0002 容量与备份措辞
+
 ## [0.3.0] - 2026-11-24
 
 ### 新增

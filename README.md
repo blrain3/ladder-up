@@ -3,7 +3,7 @@
 高校算法竞赛集训队的事务管理系统：会员、题库与训练、集训、赛事、组队五条主线，外加二期的智能服务。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-8%20份%20%2F%2095%20页-informational)](docs/)
+[![Docs](https://img.shields.io/badge/docs-12%20份%20%2F%20126%20页-informational)](docs/)
 [![Diagrams](https://img.shields.io/badge/uml-18%20张-informational)](diagrams/)
 
 **当前状态：设计定稿并经开工前评审修订（11 份文档、18 张 UML 图），代码未开始；开发路线见 `docs/开发路线-v1.0.md`。**
@@ -35,12 +35,13 @@ make docs        # 文档转 docx / pdf 到 docs/_build
 |---|---|---|
 | [`docs/需求基线-v1.2.md`](docs/需求基线-v1.2.md) | 16 | 6 个域、9 个参与者、54 个功能、20 个实体、4 个状态机、5 条关键流程；第 10 节 10 项决策全部定稿 |
 | [`docs/设计说明书-v1.0.md`](docs/设计说明书-v1.0.md) | 15 | 分层架构、模块划分、技术选型对比、8 条关键设计决策、权限矩阵、非功能设计、部署与演进 |
-| [`docs/数据库设计-v1.0.md`](docs/数据库设计-v1.0.md) | 21 | 38 张表清单（一期 27 / 二期 11）+ 27 张完整 DDL、SQLite 方言映射、索引与约束理由、枚举字典、功能到表的映射 |
-| [`docs/接口设计-v1.0.md`](docs/接口设计-v1.0.md) | 11 | 通用约定、错误码表、约 90 个 REST 接口、4 个关键接口示例、外部集成约束 |
+| [`docs/数据库设计-v1.0.md`](docs/数据库设计-v1.0.md) | 22 | 38 张表清单（一期 27 / 二期 11）+ 27 张完整 DDL、SQLite 方言映射、索引与约束理由、枚举字典、功能到表的映射 |
+| [`docs/接口设计-v1.0.md`](docs/接口设计-v1.0.md) | 12 | 通用约定、错误码表、约 90 个 REST 接口、4 个关键接口示例、外部集成约束 |
 | [`docs/测试计划-v1.0.md`](docs/测试计划-v1.0.md) | 21 | 四层测试策略、54 条功能的覆盖矩阵、12 条详细场景用例、缺陷管理 |
 | [`docs/项目计划-v1.0.md`](docs/项目计划-v1.0.md) | 14 | 真实日期的 4 周里程碑、7 个纵向切片、按 AI 协作模式的工时口径、质量门槛 |
-| [`docs/开发路线-v1.0.md`](docs/开发路线-v1.0.md) | 4 | 切片级执行清单：交付文件、验收命令、协作方式、交付周动作 |
-| [`docs/review/gpt-review-v1.0.md`](docs/review/gpt-review-v1.0.md) | 4 | 开工前技术评审：技术栈复核、开发线路意见、7 处文档矛盾、69/100 |
+| [`docs/开发路线-v1.0.md`](docs/开发路线-v1.0.md) | 5 | 切片级执行清单：交付文件、验收命令、协作方式、交付周动作 |
+| [`docs/review/gpt-review-v1.0.md`](docs/review/gpt-review-v1.0.md) | 8 | 开工前技术评审：技术栈复核、开发线路意见、7 处文档矛盾、69/100 |
+| [`docs/review/gpt-review-v1.1.md`](docs/review/gpt-review-v1.1.md) | 7 | 第二轮复核：闭环核对、交叉一致性、3 项开工阻塞、76/100 |
 | [`docs/图目录.md`](docs/图目录.md) | 3 | 18 张图的编号与用途 |
 | [`docs/工程规范.md`](docs/工程规范.md) | 2 | 目录、命名、提交信息、分支、文档与图的管理约定 |
 | [`docs/来源说明.md`](docs/来源说明.md) | 1 | 需求来源、与原始材料的关系、名称与商标说明 |
@@ -78,7 +79,7 @@ Python 3.11 + FastAPI + SQLAlchemy 2.0 + SQLite（WAL）+ Jinja2/Bootstrap 5，�
 
 ## 设计要点
 
-- **增量与幂等**：外部 OJ 导入以 `(platform, external_id)` 为幂等键；打卡以 `(member, task, date)` 唯一键去重；报名接口支持 `Idempotency-Key`。
+- **幂等靠业务键**：OJ 提交以 `(platform, externalId)`、打卡以 `(member, task, date)`、成绩以 `(test, member)` 去重，重复提交返回 40901 并带已有记录 id；不引入通用幂等请求头。
 - **批量事务**：参赛资格确定与赛站分配在一个事务内提交，名额冲突整体回滚并返回冲突明细。
 - **状态在应用层校验**：不用数据库触发器做状态迁移，便于给出可读错误也能单测。
 - **学年归档锁定**：归档后学年数据只读，报表默认只查当前学年，避免主表膨胀。
@@ -90,7 +91,7 @@ docs/            需求基线、设计、数据库、接口、测试、项目计
 docs/adr/        架构决策记录
 diagrams/        PlantUML 图源（src/）与 PNG
 scripts/         出图、文档转换
-src/             源码（技术栈待定，见需求基线第 10 节）
+src/             源码（Python + FastAPI，见 ADR 0002）
 tests/           测试
 ```
 
