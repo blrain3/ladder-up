@@ -17,7 +17,8 @@ from .web import content_type, parse_object_id
 ROLE_PERMISSIONS = {
     "member": {"member:read:self", "problem:read", "training:read:self", "checkin:write:self"},
     "dept_admin": {"member:read", "member:write", "training:read", "training:write", "problem:read"},
-    "coach": {"member:read", "member:approve", "problem:write", "training:approve", "contest:*"},
+    "coach": {"member:read", "member:approve", "problem:read", "problem:write",
+              "training:approve", "contest:*"},
 }
 
 
@@ -92,7 +93,8 @@ async def csrf_form(request: Request):
 
 
 async def validate_csrf(request, session, form=None):
-    if content_type(request) == "application/json":
+    media_type = content_type(request)
+    if media_type == "application/json" or (request.method == "DELETE" and not media_type):
         presented = request.headers.get("X-CSRF-Token")
     else:
         if form is None:

@@ -26,10 +26,10 @@ from .security import load_session
 from .web import APP_DIR, page, wants_html
 
 
-def error(status, code, message, headers=None):
+def error(status, code, message, headers=None, data=None):
     return JSONResponse(
         status_code=status,
-        content={"code": code, "message": message, "data": None},
+        content={"code": code, "message": message, "data": data},
         headers=headers,
     )
 
@@ -105,23 +105,25 @@ async def log_request(request: Request, call_next):
         }, ensure_ascii=False))
 
 
-def request_error(request, status, code, message, headers=None):
+def request_error(request, status, code, message, headers=None, data=None):
     if wants_html(request) and request.url.path != "/health":
         return page(
             request, "error.html", status=status, headers=headers,
             error_code=code, error_message=message,
         )
-    return error(status, code, message, headers)
+    return error(status, code, message, headers, data)
 
 
 @app.exception_handler(HTTPException)
 async def handle_http_error(request, exc):
     code = {502: 50002}.get(exc.status_code, exc.status_code * 100 + 1)
+    data = None
     if isinstance(exc.detail, dict):
         code, message = exc.detail["code"], exc.detail["message"]
+        data = exc.detail.get("data")
     else:
         message = exc.detail if isinstance(exc.detail, str) else "请求失败"
-    return request_error(request, exc.status_code, code, message, exc.headers)
+    return request_error(request, exc.status_code, code, message, exc.headers, data)
 
 
 @app.exception_handler(RequestValidationError)

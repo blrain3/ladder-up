@@ -18,7 +18,8 @@ from app.models.base import local_time
 DEFAULT_PERMISSIONS = {
     "member": ("member:read:self", "problem:read", "training:read:self", "checkin:write:self"),
     "dept_admin": ("member:read", "member:write", "training:read", "training:write", "problem:read"),
-    "coach": ("member:read", "member:approve", "problem:write", "training:approve", "contest:*"),
+    "coach": ("member:read", "member:approve", "problem:read", "problem:write",
+              "training:approve", "contest:*"),
 }
 OTHER_PERMISSIONS = (
     "contest:read", "contest:write", "contest:approve",

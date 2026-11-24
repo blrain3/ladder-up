@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}题库统计{% endblock %}
+{% block content %}
+<h1>题库统计</h1>
+<h2>知识点题量</h2>
+<table class="table">
+  <thead><tr><th>知识点</th><th>题量</th></tr></thead>
+  <tbody>
+    {% for item in stats.kp_counts %}
+    <tr><td>{{ item.kp_name }}</td><td>{{ item.problem_count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<h2>难度分布</h2>
+<ul>
+  {% for difficulty, count in stats.difficulty_counts.items() %}
+  <li>{{ difficulty }}（{{ count }}）</li>
+  {% endfor %}
+</ul>
+<h2>题型分布</h2>
+<ul>
+  {% for type, count in stats.type_counts.items() %}
+  <li>{{ type }}（{{ count }}）</li>
+  {% endfor %}
+</ul>
+<h2>题目使用情况</h2>
+<table class="table">
+  <thead><tr><th>题目</th><th>使用频次</th><th>正确率</th></tr></thead>
+  <tbody>
+    {% for item in stats.problem_references %}
+    <tr>
+      <td><a href="/problems/{{ item.problem_id }}">{{ item.title }}</a></td>
+      <td>{{ item.referenced_count }}</td>
+      <td>{{ '{:.1%}'.format(item.correct_rate) if item.correct_rate is not none else '暂无数据' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><a href="/problems">返回题库</a></p>
+{% endblock %}
