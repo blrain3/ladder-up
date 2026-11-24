@@ -1,0 +1,36 @@
+# 运行产物与本地数据
+data/
+*.db
+*.sqlite
+*.log
+
+# 凭据与本地配置
+.env
+.env.*
+config.local.*
+*.pem
+*.key
+
+# 依赖与构建
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+target/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# 编辑器与系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 办公临时文件
+~$*
+
+# 文档中间产物（PDF 与图按需提交，见 docs/工程规范.md）
+docs/_build/
