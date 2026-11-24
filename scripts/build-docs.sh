@@ -13,7 +13,7 @@ if [ "$have_pandoc" -eq 0 ] && [ ! -x "$PYBIN" ]; then
   exit 1
 fi
 
-for f in docs/*.md; do
+for f in docs/*.md docs/review/*.md; do
   [ -e "$f" ] || continue
   base=$(basename "$f" .md)
   if [ "$have_pandoc" -eq 1 ]; then

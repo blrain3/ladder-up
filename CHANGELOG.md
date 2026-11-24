@@ -2,6 +2,23 @@
 
 格式参考 Keep a Changelog，版本遵循语义化版本（设计阶段用 0.x）。
 
+## [0.3.0] - 2026-11-24
+
+### 新增
+
+- ADR 0003：认证改服务端会话（弃 JWT）、SQLite WAL 与统一引擎工厂、Alembic 显式迁移、systemd timer、Online Backup 备份
+- `docs/开发路线-v1.0.md`：7 个纵向切片的执行清单，含交付文件、命令级验收与协作规则
+- `docs/review/gpt-review-v1.0.md`：开工前技术评审（69/100）
+
+### 修改
+
+- 需求基线 v1.1 → v1.2：范围口径改为“54 项设计追踪 / 23 项实现”；§10.2 认证改服务端会话；§10.3 附件改 `attachment` 表
+- 数据库设计：表清单重排为一期 27 张 + 二期 11 张，补 8 张一期表 DDL，`member` 增 `password_hash`/`auth_provider`/`photo_attachment_id`，`problem` 增 `problem_type`，`checkin.task_id` 改非空，容量口径更正为 47 万行
+- 接口设计：移除 `/auth/refresh` 与通用幂等头承诺，改 Cookie 会话 + CSRF；OJ 集成缩为 Codeforces 拉取 + Vjudge CSV；导出统一 CSV
+- 项目计划：里程碑改真实日期与命令级退出条件；迭代改为 7 个纵向切片；工时由 68 人日改为单人+AI 口径
+- 设计说明书 §9：部署改两容器，删除数据库服务与 dump 链
+- 测试计划：TC-A-07 导出改 CSV，S06/S07 按新表重写，新增 NF-05 写锁竞争用例
+
 ## [0.2.0] - 2026-11-24
 
 ### 新增
