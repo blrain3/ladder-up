@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}会员统计{% endblock %}
+{% block content %}
+<h1>会员统计</h1>
+<p class="lead">统计范围：<strong>{{ stats.scope }}</strong>
+  {% if stats.department %}（{{ stats.department }}）{% endif %}
+  · 学期：{{ stats.term }}</p>
+
+<section id="summary">
+  <h2>总览</h2>
+  <dl class="dl-horizontal">
+    <dt>在册人数</dt><dd>{{ stats.active }}</dd>
+    <dt>本学期新增会员</dt><dd>{{ stats.new_this_term }}</dd>
+    <dt>本学期退会/除名</dt><dd>{{ stats.left_this_term }}</dd>
+  </dl>
+</section>
+
+{% macro distribution(title, rows) %}
+<section>
+  <h2>{{ title }}分布</h2>
+  <table class="table">
+    <thead><tr><th>{{ title }}</th><th>人数</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr><td>{{ row.value or '—' }}</td><td>{{ row.count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endmacro %}
+
+{{ distribution('年级', stats.distributions.grade) }}
+{{ distribution('专业', stats.distributions.major) }}
+{{ distribution('部门', stats.distributions.department) }}
+{{ distribution('会员类型', stats.distributions.member_type) }}
+<section>
+  <h2>部门 × 会员类型</h2>
+  <table class="table">
+    <thead><tr><th>部门</th><th>会员类型</th><th>人数</th></tr></thead>
+    <tbody>
+      {% for row in stats.distributions.department_member_type %}
+      <tr><td>{{ row.department }}</td><td>{{ row.member_type }}</td><td>{{ row.count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

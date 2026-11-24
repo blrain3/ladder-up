@@ -2,6 +2,7 @@ from .assessment import AssessmentTest, JobRun, MemberAssessment, TestScore
 from .attachment import Attachment
 from .audit import AuditLog
 from .auth import MemberPermission, MemberSession, PermissionPoint
+from .award import MemberAward
 from .base import Base
 from .knowledge_point import KnowledgePoint
 from .member import Member, MemberApplication
@@ -19,7 +20,8 @@ from .training import (
 
 __all__ = [
     "AssessmentTest", "Attachment", "AuditLog", "Base", "Checkin", "CheckinProblem", "Department", "JobRun",
-    "KnowledgePoint", "Member", "MemberApplication", "MemberAssessment", "MemberPermission", "MemberSession",
+    "KnowledgePoint", "Member", "MemberApplication", "MemberAssessment", "MemberAward",
+    "MemberPermission", "MemberSession",
     "PermissionPoint", "Problem", "ProblemKp", "ProblemSolution", "SysConfig", "TestScore",
     "TaskAssignee", "TaskProblem", "TrainingPhase", "TrainingPlan", "TrainingTask",
 ]

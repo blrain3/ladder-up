@@ -17,13 +17,15 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
-from .auth import active_member
+from .auth import active_member, allows
 from .config import Settings
 from .db import SessionLocal, database_path, get_session, make_engine
 from .models import Member
 from .routes import router
 from .security import load_session
-from .web import APP_DIR, page, wants_html
+from .web import APP_DIR, page, templates, wants_html
+
+templates.env.globals["allows"] = allows
 
 
 def error(status, code, message, headers=None, data=None):

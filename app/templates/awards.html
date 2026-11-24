@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}奖惩{% endblock %}
+{% block content %}
+<h1>奖惩记录</h1>
+
+{% if can_approve %}
+<section id="award-form">
+  <h2>录入奖惩</h2>
+  <form method="post" action="/awards" class="form-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label for="member_id">会员</label>
+      <select class="form-control" id="member_id" name="member_id" required>
+        {% for option in member_options %}
+        <option value="{{ option.id }}">{{ option.student_no }} {{ option.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="award_type">类型</label>
+      <select class="form-control" id="award_type" name="award_type" required>
+        {% for kind in award_types %}
+        <option value="{{ kind }}">{{ kind }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="title">标题</label>
+      <input class="form-control" id="title" name="title" maxlength="100" minlength="2" required>
+    </div>
+    <div class="form-group">
+      <label for="extra_points">分值（整数百分位）</label>
+      <input class="form-control" id="extra_points" name="extra_points" type="number" step="1">
+    </div>
+    <div class="form-group">
+      <label for="happened_on">日期</label>
+      <input class="form-control" id="happened_on" name="happened_on" type="date" required>
+    </div>
+    <div class="form-group">
+      <label for="reason">事由</label>
+      <input class="form-control" id="reason" name="reason" maxlength="500">
+    </div>
+    <button class="btn btn-primary" type="submit">保存</button>
+  </form>
+  {{ pagination_links(option_pagination, "可选会员分页") }}
+</section>
+{% endif %}
+
+<section id="award-list">
+  <h2>列表</h2>
+  {% if awards['items'] %}
+  <table class="table">
+    <thead><tr><th>日期</th><th>会员</th><th>类型</th><th>标题</th><th>分值(分)</th><th>事由</th></tr></thead>
+    <tbody>
+      {% for row in awards['items'] %}
+      <tr>
+        <td>{{ row.happened_on }}</td>
+        <td>{{ row.student_no }} {{ row.name }}</td>
+        <td>{{ row.award_type }}</td>
+        <td>{{ row.title }}</td>
+        <td>{{ row.points or "—" }}</td>
+        <td>{{ row.reason | default('—', true) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">暂无数据</p>
+  {% endif %}
+  {{ pagination_links(pagination, "奖惩列表分页") }}
+</section>
+{% endblock %}
