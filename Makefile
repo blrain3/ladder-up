@@ -16,9 +16,10 @@ clean:
 	@find . -name '*.tmp' -delete
 	@echo "done"
 
-PYTHON := .venv/bin/python
-ALEMBIC := .venv/bin/alembic
-PYTEST := .venv/bin/pytest
+# 有 .venv 就用它，否则退回系统解释器（CI 用后者）
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+ALEMBIC ?= $(if $(wildcard .venv/bin/alembic),.venv/bin/alembic,alembic)
+PYTEST ?= $(if $(wildcard .venv/bin/pytest),.venv/bin/pytest,pytest)
 DATABASE_URL ?= sqlite:///data/app.db
 APP_ENV ?= development
 SESSION_TTL_HOURS ?= 8
