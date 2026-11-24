@@ -165,3 +165,96 @@ def application_form(client):
         }
 
     return load
+
+
+@pytest.fixture
+def training_api(client, signed_in, coach, accounts, engine):
+    """S4 训练 API 工厂：教练侧建计划/阶段/题目/任务/指派/下发，会员侧打卡."""
+    from app.db import SessionLocal
+    from app.models import Problem
+    from app.models.base import local_time
+
+    coach_csrf = signed_in(client, "coach0001")
+    ids, _ = accounts
+    now = local_time()
+
+    def problems(*titles):
+        with SessionLocal(bind=engine) as session, session.begin():
+            created = []
+            for title in titles:
+                problem = Problem(
+                    title=title, source="自建", difficulty="入门", problem_type="程序",
+                    statement=None, sample_in="1 2", sample_out="3", created_by=None,
+                    created_at=now, updated_at=now,
+                )
+                session.add(problem)
+                session.flush()
+                created.append(problem.id)
+        return created
+
+    def plan(term="2026-2027-1", **extra):
+        response = client.post(
+            "/training-plans", json={"term": term, **extra},
+            headers={"X-CSRF-Token": coach_csrf},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def phase(plan_id, name="基础", start_on="2026-09-01", end_on="2027-01-31"):
+        response = client.post(
+            "/training-phases",
+            json={"plan_id": plan_id, "name": name, "start_on": start_on, "end_on": end_on},
+            headers={"X-CSRF-Token": coach_csrf},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def task(phase_id, problem_ids, title="周任务", **extra):
+        payload = {"phase_id": phase_id, "title": title, "problem_ids": problem_ids, **extra}
+        response = client.post(
+            "/training-tasks", json=payload, headers={"X-CSRF-Token": coach_csrf},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["data"]["id"]
+
+    def assign(task_id, assignee_type, *, member_ids=None, team_ids=None, expect=200):
+        payload = {"assignee_type": assignee_type}
+        if member_ids is not None:
+            payload["member_ids"] = member_ids
+        if team_ids is not None:
+            payload["team_ids"] = team_ids
+        response = client.post(
+            f"/training-tasks/{task_id}/assign", json=payload,
+            headers={"X-CSRF-Token": coach_csrf},
+        )
+        assert response.status_code == expect, response.text
+        return response
+
+    def member_csrf(student_no):
+        return signed_in(client, student_no)
+
+    def checkin(student_no, task_id, *, solved_count=0, solved_problem_ids=None,
+                minutes=None, checkin_date=None, problems_payload=None, expect=200):
+        csrf = signed_in(client, student_no)
+        payload = {"task_id": task_id, "solved_count": solved_count}
+        if minutes is not None:
+            payload["minutes"] = minutes
+        if checkin_date is not None:
+            payload["checkin_date"] = checkin_date
+        if problems_payload is not None:
+            payload["problems"] = problems_payload
+        elif solved_problem_ids is not None:
+            payload["problems"] = [
+                {"problem_id": problem_id, "solved": 1, "attempts": None}
+                for problem_id in solved_problem_ids
+            ]
+        response = client.post("/checkins", json=payload, headers={"X-CSRF-Token": csrf})
+        assert response.status_code == expect, response.text
+        return response
+
+    return {
+        "client": client, "coach_csrf": coach_csrf, "ids": ids, "engine": engine,
+        "coach_id": coach["id"],
+        "problems": problems, "plan": plan, "phase": phase, "task": task,
+        "assign": assign, "member_csrf": member_csrf, "checkin": checkin,
+    }

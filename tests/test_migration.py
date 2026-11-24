@@ -51,3 +51,35 @@ def test_s2_repairs_legacy_columns_and_downgrades_only_its_changes(tmp_path, mon
         command.upgrade(config, "head")
     finally:
         engine.dispose()
+
+
+def test_s4_downgrade_removes_only_its_threshold(tmp_path, monkeypatch):
+    from alembic.config import Config
+
+    from alembic import command
+    from app.db import make_engine
+
+    url = f"sqlite:///{tmp_path / 's4-downgrade.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    monkeypatch.setenv("APP_ENV", "test")
+    config = Config("alembic.ini")
+    engine = make_engine(url)
+    query = "SELECT config_value FROM sys_config WHERE config_key = 'training.alert_threshold'"
+    try:
+        command.upgrade(config, "0005")
+        with engine.connect() as connection:
+            assert connection.exec_driver_sql(query).scalar_one() == "0.6"
+        command.downgrade(config, "0004")
+        assert "training_task" not in inspect(engine).get_table_names()
+        with engine.begin() as connection:
+            assert connection.exec_driver_sql(query).scalar_one_or_none() is None
+            connection.exec_driver_sql(
+                "INSERT INTO sys_config (config_key, config_value, updated_at) "
+                "VALUES ('training.alert_threshold', '0.72', '2026-01-01')"
+            )
+        command.upgrade(config, "0005")
+        command.downgrade(config, "0004")
+        with engine.connect() as connection:
+            assert connection.exec_driver_sql(query).scalar_one() == "0.72"
+    finally:
+        engine.dispose()

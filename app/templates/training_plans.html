@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}训练计划{% endblock %}
+{% block content %}
+<h1>训练计划</h1>
+
+<section class="panel panel-default">
+  <div class="panel-heading">新建计划</div>
+  <div class="panel-body">
+    <form method="post" action="/training-plans">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label for="p-term">学期</label>
+        <input id="p-term" class="form-control" name="term" required maxlength="20"
+               placeholder="如 2026-2027-1 / 2027-winter">
+      </div>
+      <div class="form-group">
+        <label for="p-goal">目标</label>
+        <input id="p-goal" class="form-control" name="goal" maxlength="500">
+      </div>
+      <div class="form-group">
+        <label for="p-intensity">强度</label>
+        <select id="p-intensity" class="form-control" name="intensity">
+          <option value="">未设置</option>
+          {% for value in intensities %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">保存计划</button>
+    </form>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>学期</th><th>目标</th><th>强度</th><th>阶段数</th><th>创建时间</th></tr></thead>
+    <tbody>
+      {% for item in plans["items"] %}
+      <tr>
+        <td><a href="/training-phases?plan_id={{ item.id }}">{{ item.term }}</a></td>
+        <td>{{ item.goal or '—' }}</td>
+        <td>{{ item.intensity or '未设置' }}</td>
+        <td>{{ item.phase_count }}</td>
+        <td>{{ item.created_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p>共 {{ plans.total }} 个训练计划</p>
+{% endblock %}

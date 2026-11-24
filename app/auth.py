@@ -18,7 +18,7 @@ ROLE_PERMISSIONS = {
     "member": {"member:read:self", "problem:read", "training:read:self", "checkin:write:self"},
     "dept_admin": {"member:read", "member:write", "training:read", "training:write", "problem:read"},
     "coach": {"member:read", "member:approve", "problem:read", "problem:write",
-              "training:approve", "contest:*"},
+              "training:read", "training:write", "training:approve", "contest:*"},
 }
 
 

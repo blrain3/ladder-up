@@ -256,4 +256,80 @@ if grep -Fq 'javascript:' "$work/body.json"; then
     exit 1
 fi
 
-echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered)"
+# S4 训练：计划、阶段、冻结指派、逐题打卡、进度、拒绝访问与原行补卡。
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d term=2026-2027-1 "$url/training-plans"
+plan_id=$(json_field data id)
+[[ "$plan_id" =~ ^[1-9][0-9]*$ && $(json_field data term) == 2026-2027-1 ]]
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "plan_id=$plan_id" \
+    --data-urlencode 'name=训练烟测阶段' -d start_on=2026-09-01 -d end_on=2027-01-31 "$url/training-phases"
+phase_id=$(json_field data id)
+[[ "$phase_id" =~ ^[1-9][0-9]*$ && $(json_field data name) == 训练烟测阶段 ]]
+
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode 'title=训练烟测第二题' --data-urlencode 'difficulty=入门' \
+    --data-urlencode 'problem_type=程序' --data-urlencode 'source=自建' \
+    -d sample_in=1 -d sample_out=1 -d "kp_ids=$child_id" "$url/problems"
+second_problem=$(json_field data id)
+[[ "$second_problem" =~ ^[1-9][0-9]*$ && "$second_problem" != "$problem_id" ]]
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "phase_id=$phase_id" \
+    --data-urlencode 'title=训练烟测任务' --data-urlencode 'assignee_type=指定会员' \
+    -d "problem_ids=$problem_id" -d "problem_ids=$second_problem" "$url/training-tasks"
+task_id=$(json_field data id)
+[[ "$task_id" =~ ^[1-9][0-9]*$ && $(json_field data title) == 训练烟测任务 ]]
+expect_http 200 -b "$work/member.jar" "$url/me"
+demo1_id=$(json_field data id)
+demo1_csrf=$(json_field data csrf_token)
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode 'assignee_type=指定会员' -d "member_ids=$demo1_id" "$url/training-tasks/$task_id/assign"
+[[ $(json_field data status) == 已下发 && $(json_field data assignees) == 1 ]]
+expect_http 200 -b "$work/coach.jar" "$url/training-tasks/$task_id"
+"$python" - "$work/body.json" "$demo1_id" "$problem_id" "$second_problem" <<'PYTASK'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as body:
+    task = json.load(body)["data"]
+assert task["published_at"] and [row["id"] for row in task["assignees"]] == [int(sys.argv[2])]
+assert [row["problem_id"] for row in task["problems"]] == list(map(int, sys.argv[3:]))
+PYTASK
+
+today=$(TZ=Asia/Shanghai date +%F)
+expect_http 200 -b "$work/member.jar" -d "csrf_token=$demo1_csrf" -d "task_id=$task_id" \
+    -d "checkin_date=$today" -d solved_count=1 -d "solved_problem_ids=$problem_id" "$url/checkins"
+checkin_id=$(json_field data id)
+[[ "$checkin_id" =~ ^[1-9][0-9]*$ && $(json_field data solved_count) == 1 ]]
+expect_http 200 -b "$work/member.jar" -H 'Accept: text/html' "$url/training-progress?phase_id=$phase_id"
+grep -Fq '1 / 2' "$work/body.json"
+expect_http 404 -b "$work/demo2.jar" "$url/training-tasks/$task_id"
+[[ $(json_field code) == 40401 ]]
+
+count_checkins() {
+    "$python" -c '
+import os, sqlite3
+with sqlite3.connect(os.environ["DATABASE_URL"].removeprefix("sqlite:///")) as connection:
+    print(connection.execute("SELECT count(*) FROM checkin").fetchone()[0])
+'
+}
+
+expect_http 200 -b "$work/coach.jar" "$url/checkins?task_id=$task_id"
+before=$(count_checkins)
+[[ "$before" == 1 && $(json_field data total) == "$before" ]]
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" -d "task_id=$task_id" \
+    -d "member_id=$demo1_id" -d "checkin_date=$today" --data-urlencode 'note=烟测补卡' "$url/checkins/makeup"
+[[ $(json_field data id) == "$checkin_id" && $(json_field data created) == False && $(json_field data status) == 补卡 ]]
+expect_http 200 -b "$work/coach.jar" "$url/checkins?task_id=$task_id"
+[[ $(count_checkins) == "$before" && $(json_field data total) == "$before" ]]
+"$python" - "$work/body.json" "$checkin_id" "$problem_id" "$second_problem" <<'PYCHECKIN'
+import json, os, sqlite3, sys
+with open(sys.argv[1], encoding="utf-8") as body:
+    row, = json.load(body)["data"]["items"]
+assert row["id"] == int(sys.argv[2]) and row["note"] == "烟测补卡"
+assert {item["problem_id"]: item["solved"] for item in row["problems"]} == {
+    int(sys.argv[3]): 1, int(sys.argv[4]): 0,
+}
+with sqlite3.connect(os.environ["DATABASE_URL"].removeprefix("sqlite:///")) as connection:
+    audit, = connection.execute(
+        "SELECT after_json FROM audit_log WHERE action = 'checkin.makeup' AND target_id = ?", (row["id"],)
+    ).fetchall()
+assert json.loads(audit[0])["note"] == "烟测补卡"
+PYCHECKIN
+
+echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow"
