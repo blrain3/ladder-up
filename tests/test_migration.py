@@ -120,3 +120,21 @@ def test_s5_downgrade_removes_only_its_threshold(tmp_path, monkeypatch):
             assert connection.exec_driver_sql(query).scalar_one() == "0.72"
     finally:
         engine.dispose()
+
+
+def test_s6_award_indexes_survive_upgrade_roundtrip(engine):
+    from alembic.config import Config
+
+    from alembic import command
+
+    config = Config("alembic.ini")
+    command.downgrade(config, "0006")
+    assert "member_award" not in inspect(engine).get_table_names()
+    assert "test_score" in inspect(engine).get_table_names()
+    command.upgrade(config, "0007")
+    engine.dispose()  # Reflect the recreated table with a fresh SQLite connection.
+    indexes = {index["name"]: index for index in inspect(engine).get_indexes("member_award")}
+    assert indexes["idx_award_member"]["column_names"] == ["member_id"]
+    unique = indexes["uk_award_member_day_title"]
+    assert unique["unique"]
+    assert unique["column_names"] == ["member_id", "happened_on", "title"]

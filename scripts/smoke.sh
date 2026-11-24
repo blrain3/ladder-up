@@ -392,6 +392,39 @@ expect_http 200 -b "$work/admin.jar" -d "csrf_token=$admin_csrf" -d "term=$term"
 expect_http 200 -b "$work/member.jar" "$url/me"
 [[ $(json_field data member_status) == 正式会员 ]]
 
+# S6 档案与统计：教练给 demo0001 录一条奖励（+150）→ 档案页显示奖惩与分值 →
+# 下载 CSV 含「奖惩」节与标题 → 统计页在册人数 ≥5。
+expect_http 200 -b "$work/coach.jar" -H "X-CSRF-Token: $coach_csrf" -H 'Content-Type: application/json' \
+    -d "{\"member_id\":$demo1_id,\"award_type\":\"奖励\",\"title\":\"烟测奖励\",\"happened_on\":\"$today\",\"extra_points\":150}" \
+    "$url/awards"
+[[ $(json_field data extra_points) == 150 && $(json_field data points) == 1.50 ]]
+
+expect_http 200 -b "$work/member.jar" -H 'Accept: text/html' "$url/members/$demo1_id/profile"
+grep -Fq '烟测奖励' "$work/body.json"
+grep -Fq '1.50' "$work/body.json"
+
+expect_http 200 -b "$work/member.jar" "$url/members/$demo1_id/export?format=csv"
+"$python" - "$work/body.json" <<'PYPROFILE'
+import codecs
+import csv
+import io
+import sys
+from pathlib import Path
+
+body = Path(sys.argv[1]).read_bytes()
+assert body.startswith(codecs.BOM_UTF8)
+rows = list(csv.reader(io.StringIO(body.decode("utf-8-sig"), newline="")))
+sections = [row[0] for row in rows if len(row) == 1 and row[0].startswith("[")]
+assert sections == ["[基本信息]", "[训练]", "[考核]", "[奖惩]", "[赛事]", "[综测汇总]"]
+start, end = rows.index(["[奖惩]"]), rows.index(["[赛事]"])
+assert rows[start + 1] == ["日期", "类型", "标题", "分值(分)", "事由"]
+assert any(row[1:4] == ["奖励", "烟测奖励", "1.50"] for row in rows[start + 2:end])
+assert rows[-1] == ["未指定学期", "", "", ""]
+PYPROFILE
+
+expect_http 200 -b "$work/coach.jar" "$url/stats/members"
+[[ $(json_field data active) -ge 5 ]]
+
 expect_http 200 -b "$work/demo2.jar" -d "csrf_token=$demo2_csrf" "$url/members/$demo2_id/leave"
 [[ $(json_field data status) == 待审核 && $(json_field data member_status) == "$demo2_status" ]]
 expect_http 200 -b "$work/demo2.jar" "$url/me"
@@ -419,4 +452,4 @@ expect_http 401 -d student_no=demo0003 \
     --data-urlencode "password=$SEED_DEMO_PASSWORD" "$url/auth/login"
 [[ $(json_field code) == 40101 ]]
 
-echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow, S5 assessment and membership flow"
+echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow, S5 assessment and membership flow, S6 awards/profile CSV/member stats"

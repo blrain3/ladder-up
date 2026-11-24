@@ -12,7 +12,7 @@ from .db import get_session
 from .models import AuditLog, Member, MemberPermission, PermissionPoint
 from .models.base import local_time
 from .security import load_session, revoke_session
-from .web import content_type, parse_object_id
+from .web import content_type, parse_object_id, wants_html
 
 ROLE_PERMISSIONS = {
     "member": {"member:read:self", "problem:read", "training:read:self", "checkin:write:self"},
@@ -114,6 +114,8 @@ async def authenticated(
     member: Member = Depends(current_member),
     session: Session = Depends(get_session),
 ):
+    if wants_html(request):
+        request.state.navigation_codes = permission_codes(member, session)
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         await validate_csrf(request, session)
     return member

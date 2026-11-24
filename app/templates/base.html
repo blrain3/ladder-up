@@ -1,3 +1,11 @@
+{% macro pagination_links(pagination, label) %}
+{% if pagination.previous or pagination.next %}
+<nav aria-label="{{ label }}">
+  {% if pagination.previous %}<a href="{{ pagination.previous }}">上一页</a>{% endif %}
+  {% if pagination.next %}<a href="{{ pagination.next }}">下一页</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -12,7 +20,18 @@
       <a class="navbar-brand" href="{{ '/members' if member else '/login' }}">拾阶</a>
       <div class="navbar-right">
         {% if member %}
+          {% set codes = request.state.navigation_codes | default([]) %}
+          {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') %}
           <a class="btn btn-link navbar-btn" href="/members">会员</a>
+          <a class="btn btn-link navbar-btn" href="/members/{{ member.id }}/profile">档案</a>
+          <a class="btn btn-link navbar-btn" href="/awards">奖惩</a>
+          {% endif %}
+          {% if allows(codes, 'system:admin') %}
+          <a class="btn btn-link navbar-btn" href="/members/export">全量导出</a>
+          {% endif %}
+          {% if allows(codes, 'member:read') %}
+          <a class="btn btn-link navbar-btn" href="/stats/members">统计</a>
+          {% endif %}
           <a class="btn btn-link navbar-btn" href="/me/password">修改密码</a>
           <form class="navbar-form navbar-right" method="post" action="/auth/logout">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

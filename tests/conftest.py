@@ -365,3 +365,21 @@ def assessment_api(training_api, admin, engine, monkeypatch):
         "create_test": create_test, "record": record, "run_assess": run_assess,
     })
     return api
+
+
+@pytest.fixture
+def grant_permission(engine):
+    from app.db import SessionLocal
+    from app.models import MemberPermission, PermissionPoint
+    from app.models.base import local_time
+
+    def grant(member_id, code):
+        with SessionLocal(bind=engine) as session, session.begin():
+            point = session.scalar(select(PermissionPoint).where(PermissionPoint.code == code))
+            if point is None:
+                point = PermissionPoint(code=code, module=code.split(":")[0], description=code)
+                session.add(point)
+                session.flush()
+            session.add(MemberPermission(member_id=member_id, permission_id=point.id, granted_at=local_time()))
+
+    return grant
