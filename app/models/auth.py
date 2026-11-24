@@ -39,6 +39,7 @@ class MemberSession(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("member.id", name="fk_session_member"))
     token_hash: Mapped[str] = mapped_column(Text)
+    csrf_nonce: Mapped[str | None] = mapped_column(Text)
     issued_at: Mapped[str] = mapped_column(Text)
     expires_at: Mapped[str] = mapped_column(Text)
     revoked_at: Mapped[str | None] = mapped_column(Text)

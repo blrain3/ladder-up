@@ -10,13 +10,13 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        names = ("DATABASE_URL", "APP_ENV", "SESSION_TTL_HOURS")
+        names = ("DATABASE_URL", "APP_ENV")
         missing = [name for name in names if not os.environ.get(name, "").strip()]
         if missing:
             raise RuntimeError(f"Missing environment variables: {', '.join(missing)}")
 
         try:
-            ttl = int(os.environ["SESSION_TTL_HOURS"])
+            ttl = int(os.environ.get("SESSION_TTL_HOURS", "8"))
             if ttl <= 0:
                 raise ValueError
         except ValueError as exc:

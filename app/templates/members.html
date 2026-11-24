@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}会员列表{% endblock %}
+{% block content %}
+<h1>会员列表</h1>
+<p>共 {{ pagination.total }} 位会员</p>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th scope="col">姓名</th><th scope="col">学号</th><th scope="col">部门</th><th scope="col">状态</th></tr></thead>
+    <tbody>
+      {% for item in pagination.items %}
+      <tr>
+        <td><a href="/members/{{ item.id }}">{{ item.name }}</a></td>
+        <td>{{ item.student_no }}</td>
+        <td>{{ item.department or '—' }}</td>
+        <td>{{ item.member_status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">此页暂无会员</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<nav class="pager" aria-label="会员分页">
+  {% if pagination.page > 1 %}
+  <a href="?page={{ pagination.page - 1 }}&amp;size={{ pagination.size }}">上一页</a>
+  {% endif %}
+  <span>第 {{ pagination.page }} 页</span>
+  {% if pagination.page * pagination.size < pagination.total %}
+  <a href="?page={{ pagination.page + 1 }}&amp;size={{ pagination.size }}">下一页</a>
+  {% endif %}
+</nav>
+{% endblock %}

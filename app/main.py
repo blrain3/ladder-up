@@ -10,6 +10,7 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -17,6 +18,8 @@ from starlette.exceptions import HTTPException
 
 from .config import Settings
 from .db import database_path, get_session, make_engine
+from .routes import router
+from .web import APP_DIR, page, wants_html
 
 
 def error(status, code, message, headers=None):
@@ -34,6 +37,7 @@ def database_unavailable():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = Settings.from_env()
+    app.state.settings = settings
     app.state.database_file = database_path(settings.database_url)
     engine = make_engine(settings.database_url)
     app.state.engine = engine
@@ -52,6 +56,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
+app.include_router(router)
 
 
 @app.middleware("http")
@@ -64,34 +70,48 @@ async def log_request(request: Request, call_next):
         response = await call_next(request)
         status = response.status_code
         response.headers["X-Request-ID"] = request_id
+        if not request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
     finally:
         request.app.state.request_logger.info(json.dumps({
             "request_id": request_id,
-            "member_id": None,
+            "member_id": getattr(request.state, "member_id", None),
             "path": request.url.path,
             "status": status,
             "ms": round((perf_counter() - started) * 1000, 2),
         }, ensure_ascii=False))
 
 
+def request_error(request, status, code, message, headers=None):
+    if wants_html(request) and request.url.path != "/health":
+        return page(
+            request, "error.html", status=status, headers=headers,
+            error_code=code, error_message=message,
+        )
+    return error(status, code, message, headers)
+
+
 @app.exception_handler(HTTPException)
-async def handle_http_error(_request, exc):
+async def handle_http_error(request, exc):
     code = {502: 50002}.get(exc.status_code, exc.status_code * 100 + 1)
-    message = exc.detail if isinstance(exc.detail, str) else "请求失败"
-    return error(exc.status_code, code, message, exc.headers)
+    if isinstance(exc.detail, dict):
+        code, message = exc.detail["code"], exc.detail["message"]
+    else:
+        message = exc.detail if isinstance(exc.detail, str) else "请求失败"
+    return request_error(request, exc.status_code, code, message, exc.headers)
 
 
 @app.exception_handler(RequestValidationError)
-async def handle_validation_error(_request, _exc):
-    return error(400, 40001, "参数校验失败")
+async def handle_validation_error(request, _exc):
+    return request_error(request, 400, 40001, "参数校验失败")
 
 
 @app.exception_handler(OperationalError)
 async def handle_database_error(request, exc):
     sqlite_code = getattr(exc.orig, "sqlite_errorcode", 0)
     if sqlite_code & 0xFF in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED, sqlite3.SQLITE_READONLY}:
-        return database_unavailable()
+        return request_error(request, 503, 50301, "数据库不可写，请重试", {"Retry-After": "1"})
     return await handle_internal_error(request, exc)
 
 
@@ -100,7 +120,7 @@ async def handle_internal_error(request, exc):
     logging.getLogger(__name__).error(
         "Unhandled %s in request %s", type(exc).__name__, request.state.request_id
     )
-    return error(500, 50001, "服务内部错误")
+    return request_error(request, 500, 50001, "服务内部错误")
 
 
 @app.get("/health")

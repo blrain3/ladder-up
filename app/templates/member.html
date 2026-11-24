@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.name }}{% endblock %}
+{% block content %}
+<a href="/members">返回会员列表</a>
+<h1>{{ profile.name }}</h1>
+<dl class="dl-horizontal">
+  <dt>学号</dt><dd>{{ profile.student_no }}</dd>
+  <dt>部门</dt><dd>{{ profile.department or '—' }}</dd>
+  <dt>专业</dt><dd>{{ profile.major or '—' }}</dd>
+  <dt>入学年份</dt><dd>{{ profile.grade or '—' }}</dd>
+  <dt>会员类型</dt><dd>{{ profile.member_type }}</dd>
+  <dt>状态</dt><dd>{{ profile.member_status }}</dd>
+  <dt>入会日期</dt><dd>{{ profile.joined_on or '—' }}</dd>
+  <dt>手机</dt><dd>{{ profile.phone or '—' }}</dd>
+  <dt>邮箱</dt><dd>{{ profile.email or '—' }}</dd>
+</dl>
+{% endblock %}

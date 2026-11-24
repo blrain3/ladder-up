@@ -34,7 +34,7 @@ def test_backup_and_restore(database_url, engine, tmp_path):
     with tarfile.open(archive, "r:gz") as bundle:
         with bundle.extractfile("manifest.json") as stream:
             manifest = json.load(stream)
-        assert manifest["migration"] == "0001"
+        assert manifest["migration"] == "0002"
         assert manifest["files"] == [{"path": f"uploads/{relative}", "sha256": sha256(photo)}]
         database = manifest["database"]
         assert sha256(archive.parent / database["path"]) == database["sha256"]

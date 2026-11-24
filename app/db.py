@@ -21,7 +21,7 @@ def database_path(database_url: str) -> Path:
 
 def make_engine(database_url: str) -> Engine:
     database_path(database_url)
-    engine = create_engine(database_url)
+    engine = create_engine(database_url, hide_parameters=True)
 
     @event.listens_for(engine, "connect")
     def configure_sqlite(connection, _record):

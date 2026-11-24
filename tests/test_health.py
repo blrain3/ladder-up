@@ -13,7 +13,7 @@ def test_health(database_url):
     with TestClient(app, backend_options=BACKEND_OPTIONS) as client:
         response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"code": 0, "message": "ok", "data": {"db": "ok", "migration": "0001"}}
+    assert response.json() == {"code": 0, "message": "ok", "data": {"db": "ok", "migration": "0002"}}
 
 
 def test_health_rejects_unmigrated_database(database_url, engine):
