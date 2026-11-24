@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    environment:
+      DATABASE_URL: sqlite:////app/data/app.db
+      APP_ENV: ${APP_ENV:-production}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-8}
+    expose:
+      - "8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 6s
+      retries: 3
+
+  proxy:
+    image: caddy:2
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  caddy_data:

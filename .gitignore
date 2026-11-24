@@ -34,3 +34,7 @@ Thumbs.db
 
 # 文档中间产物（PDF 与图按需提交，见 docs/工程规范.md）
 docs/_build/
+
+# 本地备份与运行日志
+backups/
+logs/
