@@ -3,7 +3,7 @@
 高校算法竞赛集训队的事务管理系统：会员、题库与训练、集训、赛事、组队五条主线，外加二期的智能服务。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-15%20份%20%2F%20136%20页-informational)](docs/)
+[![Docs](https://img.shields.io/badge/docs-15%20份%20%2F%20138%20页-informational)](docs/)
 [![Diagrams](https://img.shields.io/badge/uml-18%20张-informational)](diagrams/)
 
 **当前状态：设计定稿并经开工前评审修订（11 份文档、18 张 UML 图），代码未开始；开发路线见 `docs/开发路线-v1.0.md`。**
@@ -44,7 +44,7 @@ make docs        # 文档转 docx / pdf 到 docs/_build
 | [`docs/review/gpt-review-v1.1.md`](docs/review/gpt-review-v1.1.md) | 7 | 第二轮复核：闭环核对、交叉一致性、3 项开工阻塞、76/100 |
 | [`docs/review/gpt-review-v1.2.md`](docs/review/gpt-review-v1.2.md) | 6 | 第三轮放行核对：三项阻塞判定、残留抽查、80/100 |
 | [`docs/review/gpt-review-v1.3.md`](docs/review/gpt-review-v1.3.md) | 2 | 第四轮核对：三项阻塞逐条判定、五处措辞级冲突、85/100 |
-| [`docs/review/gpt-review-v1.4.md`](docs/review/gpt-review-v1.4.md) | 2 | 第五轮核对：五项冲突三项消除、三处未消除、89/100 |
+| [`docs/review/gpt-review-v1.4.md`](docs/review/gpt-review-v1.4.md) | 3 | 第五轮核对：五项冲突三项消除、三处未消除、89/100 |
 | [`docs/图目录.md`](docs/图目录.md) | 3 | 18 张图的编号与用途 |
 | [`docs/工程规范.md`](docs/工程规范.md) | 2 | 目录、命名、提交信息、分支、文档与图的管理约定 |
 | [`docs/来源说明.md`](docs/来源说明.md) | 1 | 需求来源、与原始材料的关系、名称与商标说明 |
