@@ -78,7 +78,7 @@ make docs        # 文档转 docx / pdf 到 docs/_build
 
 ## 技术栈
 
-Python 3.11 + FastAPI + SQLAlchemy 2.0 + SQLite（WAL）+ Jinja2/Bootstrap 5，单机 Docker Compose 两容器部署。认证用服务端会话而非 JWT，定时任务用 systemd timer 触发一次性 CLI，备份走 SQLite Online Backup API。选型理由见 [ADR 0002](docs/adr/0002-技术选型与待确认项.md) 与 [ADR 0003](docs/adr/0003-会话认证与运行契约.md)；数据库 DDL 以 MySQL 语法表达逻辑模型，落地按 `docs/数据库设计-v1.0.md` 第 4.0 节映射。
+Python 3.11 + FastAPI + SQLAlchemy 2.0 + SQLite（WAL）+ Jinja2 + Bootstrap 5.3.3 + Bootstrap Icons（本地托管），单机 Docker Compose 两容器部署。认证用服务端会话而非 JWT，定时任务用 systemd timer 触发一次性 CLI，备份走 SQLite Online Backup API。选型理由见 [ADR 0002](docs/adr/0002-技术选型与待确认项.md) 与 [ADR 0003](docs/adr/0003-会话认证与运行契约.md)；数据库 DDL 以 MySQL 语法表达逻辑模型，落地按 `docs/数据库设计-v1.0.md` 第 4.0 节映射。
 
 ## 设计要点
 

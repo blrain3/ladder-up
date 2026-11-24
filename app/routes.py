@@ -28,6 +28,7 @@ from bin.job import JobFailed, run_job
 from bin.job import assess_term as run_assess_term
 
 from .assessment import (
+    ACTIVE_STATUSES,
     LEFT_STATUSES,
     AssessmentError,
     active_target,
@@ -361,7 +362,12 @@ def member_detail(request: Request, id: int = Depends(object_id),
         "can_write": photo_access(member, item, session, write=True),
     }
     if wants_html(request):
-        return page(request, "member.html", profile=data)
+        can_expel = (
+            allows(permission_codes(member, session), "member:approve")
+            and item.member_status in ACTIVE_STATUSES
+            and (member.role != "dept_admin" or bool(member.dept_id and member.dept_id == item.dept_id))
+        )
+        return page(request, "member.html", profile=data, can_expel=can_expel)
     return success(data)
 
 
@@ -2695,20 +2701,20 @@ def export_member_csv(request: Request, id: int = Depends(object_id),
 @router.get("/awards")
 def award_list(request: Request, page_number: int = Query(1, alias="page", ge=1, le=2**63 // 100),
                page_size: int = Query(50, ge=1, le=100),
+               scope: str | None = Query(None),
                option_page: int = Query(1, ge=1, le=2**63 // 100),
                member: Member = Depends(authenticated),
                session: Session = Depends(get_session)):
     codes = permission_codes(member, session)
-    if allows(codes, "member:read"):
-        scope = approve_member_scope(member)
-    elif allows(codes, "member:read:self"):
-        scope = Member.id == member.id
-    else:
+    can_read_all = allows(codes, "member:read")
+    if not can_read_all and not allows(codes, "member:read:self"):
         deny(request, session, target_type="award")
+    mine = scope == "mine" or not can_read_all
+    member_filter = Member.id == member.id if mine else approve_member_scope(member)
     statement = (
         select(MemberAward, Member)
         .join(Member, Member.id == MemberAward.member_id)
-        .where(scope, Member.deleted_at.is_(None))
+        .where(member_filter, Member.deleted_at.is_(None))
         .order_by(MemberAward.happened_on.desc(), MemberAward.id.desc())
     )
     total = count_rows(session, statement)
@@ -2716,7 +2722,7 @@ def award_list(request: Request, page_number: int = Query(1, alias="page", ge=1,
     items = [award_item(row, target, member, codes) for row, target in rows]
     data = {"total": total, "page": page_number, "page_size": page_size, "items": items}
     if wants_html(request):
-        can_approve = allows(codes, "member:approve")
+        can_approve = scope != "mine" and allows(codes, "member:approve")
         member_options = []
         if can_approve:
             member_options = session.scalars(
@@ -2725,6 +2731,7 @@ def award_list(request: Request, page_number: int = Query(1, alias="page", ge=1,
             ).all()
         return page(
             request, "awards.html", awards=data, can_approve=can_approve,
+            mine=mine, can_read_all=can_read_all,
             member_options=member_options[:50], award_types=AWARD_TYPES,
             option_pagination=profile_history_page(request, "option_page", option_page, member_options),
             pagination=training_page(request, page_number, page_size, page_number * page_size < total),

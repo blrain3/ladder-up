@@ -2,40 +2,33 @@
 {% block title %}会员证 · {{ profile.name }}{% endblock %}
 {% block content %}
 <div class="member-card">
-  <div class="card-header no-print">
-    <a href="/members/{{ profile.id }}">返回详情</a>
-    <button class="btn btn-default" onclick="window.print()">打印会员证</button>
+  <div class="d-flex justify-content-between mb-3 no-print">
+    <a class="btn btn-outline-secondary btn-sm" href="/members/{{ profile.id }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回详情</a>
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-action="print"><i class="bi bi-printer" aria-hidden="true"></i> 打印会员证</button>
   </div>
-  <div class="panel panel-default">
-    <div class="panel-heading"><h2>拾阶会员证</h2></div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header"><h2>拾阶会员证</h2></div>
+    <div class="card-body">
       <div class="row">
         <div class="col-sm-4">
           {% if profile.photo_attachment_id %}
           <img class="img-thumbnail" src="/files/{{ profile.photo_attachment_id }}" alt="会员照片">
           {% else %}
-          <div class="well text-center text-muted">暂无照片</div>
+          <div class="card card-body text-center text-muted"><i class="bi bi-person-bounding-box" aria-hidden="true"></i> 暂无照片</div>
           {% endif %}
         </div>
         <div class="col-sm-8">
-          <dl class="dl-horizontal">
-            <dt>姓名</dt><dd>{{ profile.name }}</dd>
-            <dt>学号</dt><dd>{{ profile.student_no }}</dd>
-            <dt>编号</dt><dd>{{ profile.id }}</dd>
-            <dt>部门</dt><dd>{{ profile.department or '—' }}</dd>
-            <dt>会员类型</dt><dd>{{ profile.member_type }}</dd>
-            <dt>入会日期</dt><dd>{{ profile.joined_on or '—' }}</dd>
+          <dl class="row" id="member-card-details">
+            <dt class="col-sm-3">姓名</dt><dd class="col-sm-9">{{ profile.name }}</dd>
+            <dt class="col-sm-3">学号</dt><dd class="col-sm-9">{{ profile.student_no }}</dd>
+            <dt class="col-sm-3">编号</dt><dd class="col-sm-9">{{ profile.id }}</dd>
+            <dt class="col-sm-3">部门</dt><dd class="col-sm-9">{{ profile.department or '—' }}</dd>
+            <dt class="col-sm-3">会员类型</dt><dd class="col-sm-9">{{ profile.member_type }}</dd>
+            <dt class="col-sm-3">入会日期</dt><dd class="col-sm-9">{{ profile.joined_on or '—' }}</dd>
           </dl>
         </div>
       </div>
     </div>
   </div>
 </div>
-<style>
-  @media print {
-    .no-print { display: none; }
-    body { background: #fff; }
-    .member-card { border: none; }
-  }
-</style>
 {% endblock %}

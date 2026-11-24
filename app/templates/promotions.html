@@ -3,15 +3,18 @@
 {% block content %}
 <h1>待转正队列</h1>
 
-<form method="get" class="form-inline">
+<form method="get" class="d-flex flex-wrap gap-2 align-items-end">
   {% if request.query_params.get("scope") == "mine" %}<input type="hidden" name="scope" value="mine">{% endif %}
-  <label for="p-term">学期</label>
-  <input id="p-term" name="term" value="{{ promotions.term }}" placeholder="如 2026-2027-1">
-  <button type="submit" class="btn btn-default">筛选</button>
+  <div class="mb-3">
+    <label class="form-label" for="p-term">学期</label>
+    <input id="p-term" class="form-control" name="term" value="{{ promotions.term }}" placeholder="如 2026-2027-1">
+  </div>
+  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
 </form>
 
 <div class="table-responsive">
-  <table class="table table-striped">
+  <table class="table table-sm table-hover align-middle">
+    <caption class="visually-hidden">待转正会员</caption>
     <thead>
       <tr><th>学号</th><th>姓名</th><th>考核结果</th><th>训练完成率</th>
           <th>未达标原因</th><th>操作</th></tr>
@@ -21,7 +24,7 @@
       <tr>
         <td>{{ item.student_no }}</td>
         <td>{{ item.name }}</td>
-        <td>{{ item.assessment_result or '—' }}</td>
+        <td>{% if item.assessment_result %}{{ status_badge(item.assessment_result) }}{% else %}—{% endif %}</td>
         <td>{{ item.completion_rate }}（{{ item.completion_solved }}/{{ item.completion_total }}）</td>
         <td>{{ item.reasons | join('；') or '—' }}</td>
         <td>
@@ -30,20 +33,22 @@
             <input type="hidden" name="term" value="{{ promotions.term }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit" class="btn btn-primary" {% if not item.ready %}disabled{% endif %}>
-              {{ "可转正" if item.ready else "未达标" }}
+              <i class="bi bi-person-check" aria-hidden="true"></i> {{ "可转正" if item.ready else "未达标" }}
             </button>
           </form>
           {% endif %}
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6">暂无数据</td></tr>
+      <tr><td colspan="6" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 <nav aria-label="分页">
-  {% if promotions.links.previous %}<a href="{{ promotions.links.previous }}">上一页</a>{% endif %}
-  {% if promotions.links.next %}<a href="{{ promotions.links.next }}">下一页</a>{% endif %}
+  <ul class="pagination pagination-sm">
+    {% if promotions.links.previous %}<li class="page-item"><a class="page-link" href="{{ promotions.links.previous }}">上一页</a></li>{% endif %}
+    {% if promotions.links.next %}<li class="page-item"><a class="page-link" href="{{ promotions.links.next }}">下一页</a></li>{% endif %}
+  </ul>
 </nav>
 {% endblock %}

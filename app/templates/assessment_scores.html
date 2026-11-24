@@ -7,7 +7,8 @@
 <form id="assessment-score-form" method="post" action="/assessment-tests/{{ scores.test.id }}/scores">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="table-responsive">
-    <table class="table table-striped">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">会员录分</caption>
       <thead>
         <tr><th>学号</th><th>姓名</th><th>已解出题数</th><th>分数（0–9999.99）</th></tr>
       </thead>
@@ -22,22 +23,24 @@
             <input type="hidden" name="old_score_{{ item.id }}" value="{{ item.score or '' }}">
           </td>
           <td>
-            <input class="form-control" name="solved_{{ item.id }}" type="number"
+            <label class="visually-hidden" for="solved-{{ item.id }}">{{ item.name }}的已解出题数</label>
+            <input class="form-control" id="solved-{{ item.id }}" name="solved_{{ item.id }}" type="number"
                    min="0" step="1" value="{{ item.solved_count if item.solved_count is not none else '' }}">
           </td>
           <td>
-            <input class="form-control" name="score_{{ item.id }}" type="number"
+            <label class="visually-hidden" for="score-{{ item.id }}">{{ item.name }}的分数</label>
+            <input class="form-control" id="score-{{ item.id }}" name="score_{{ item.id }}" type="number"
                    min="0" max="9999.99" step="0.01" value="{{ item.score or '' }}">
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="4">暂无数据</td></tr>
+        <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% if scores["items"] %}
-  <button type="submit" class="btn btn-primary">保存成绩</button>
+  <button type="submit" class="btn btn-primary"><i class="bi bi-save" aria-hidden="true"></i> 保存成绩</button>
   {% endif %}
 </form>
 <script src="/static/assessment-scores.js" defer></script>

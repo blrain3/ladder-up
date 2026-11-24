@@ -1,0 +1,31 @@
+.member-photo {
+  max-width: min(100%, 200px);
+}
+
+.table td.knowledge-depth-2 { padding-left: 24px; }
+.table td.knowledge-depth-3 { padding-left: 48px; }
+.table td.knowledge-depth-4 { padding-left: 72px; }
+.table td.knowledge-depth-5 { padding-left: 96px; }
+
+progress.progress {
+  appearance: none;
+  color: var(--bs-primary);
+}
+
+progress.progress::-webkit-progress-bar {
+  background-color: var(--bs-progress-bg);
+}
+
+progress.progress::-webkit-progress-value {
+  background-color: var(--bs-primary);
+}
+
+progress.progress::-moz-progress-bar {
+  background-color: var(--bs-primary);
+}
+
+@media print {
+  body:has(.member-card) :is(.no-print, .navbar, footer) { display: none !important; }
+  body:has(.member-card) { background: #fff; }
+  .member-card { border: none; }
+}

@@ -4,31 +4,34 @@
 <h1>考核结果</h1>
 
 {% if can_run %}
-<section class="panel panel-default">
-  <div class="panel-heading">运行考核计算</div>
-  <div class="panel-body">
+<section class="card">
+  <div class="card-header"><i class="bi bi-play-circle" aria-hidden="true"></i> 运行考核计算</div>
+  <div class="card-body">
     <form method="post" action="/assessments/run">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="form-group">
-        <label for="a-term">学期</label>
+      <div class="mb-3">
+        <label class="form-label" for="a-term">学期</label>
         <input id="a-term" class="form-control" name="term" required maxlength="20"
                placeholder="如 2026-2027-1" value="{{ assessments.term }}">
       </div>
-      <button type="submit" class="btn btn-primary">运行考核</button>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-play" aria-hidden="true"></i> 运行考核</button>
     </form>
   </div>
 </section>
 {% endif %}
 
-<form method="get" class="form-inline">
+<form method="get" class="d-flex flex-wrap gap-2 align-items-end">
   {% if request.query_params.get("scope") == "mine" %}<input type="hidden" name="scope" value="mine">{% endif %}
-  <label for="term-filter">学期</label>
-  <input id="term-filter" name="term" value="{{ assessments.term }}" placeholder="如 2026-2027-1">
-  <button type="submit" class="btn btn-default">筛选</button>
+  <div class="mb-3">
+    <label class="form-label" for="term-filter">学期</label>
+    <input id="term-filter" class="form-control" name="term" value="{{ assessments.term }}" placeholder="如 2026-2027-1">
+  </div>
+  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
 </form>
 
 <div class="table-responsive">
-  <table class="table table-striped">
+  <table class="table table-sm table-hover align-middle">
+    <caption class="visually-hidden">会员考核结果</caption>
     <thead>
       <tr><th>学期</th><th>学号</th><th>姓名</th><th>结果</th><th>观察名单</th>
           <th>考核时间</th><th>备注</th></tr>
@@ -39,13 +42,13 @@
         <td>{{ item.term }}</td>
         <td>{{ item.student_no }}</td>
         <td>{{ item.name }}</td>
-        <td>{{ item.result }}</td>
+        <td>{{ status_badge(item.result) }}</td>
         <td>{{ "是" if item.in_watchlist else "否" }}</td>
         <td>{{ item.assessed_at }}</td>
         <td>{{ item.remark or '—' }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="7">暂无数据</td></tr>
+      <tr><td colspan="7" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -54,7 +57,8 @@
 {% if can_run %}
 <h2>最近任务运行</h2>
 <div class="table-responsive">
-  <table class="table table-striped">
+  <table class="table table-sm table-hover align-middle">
+    <caption class="visually-hidden">最近任务运行</caption>
     <thead>
       <tr><th>任务</th><th>学期</th><th>业务日</th><th>状态</th><th>尝试次数</th>
           <th>开始时间</th><th>结束时间</th><th>详情</th></tr>
@@ -72,7 +76,7 @@
         <td>{{ job.detail or '—' }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="8">暂无数据</td></tr>
+      <tr><td colspan="8" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>

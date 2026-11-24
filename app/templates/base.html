@@ -1,10 +1,48 @@
 {% macro pagination_links(pagination, label) %}
 {% if pagination.previous or pagination.next %}
 <nav aria-label="{{ label }}">
-  {% if pagination.previous %}<a href="{{ pagination.previous }}">上一页</a>{% endif %}
-  {% if pagination.next %}<a href="{{ pagination.next }}">下一页</a>{% endif %}
+  <ul class="pagination pagination-sm">
+    {% if pagination.previous %}<li class="page-item"><a class="page-link" href="{{ pagination.previous }}">上一页</a></li>{% endif %}
+    {% if pagination.next %}<li class="page-item"><a class="page-link" href="{{ pagination.next }}">下一页</a></li>{% endif %}
+  </ul>
 </nav>
 {% endif %}
+{% endmacro %}
+
+{% macro status_badge(value) %}
+{%- if value in ('在册', '正式会员', '竞赛实验室成员', '实验室成员') -%}
+<span class="badge text-bg-success"><i class="bi bi-person-check" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value in ('观察', '观察会员') -%}
+<span class="badge text-bg-info"><i class="bi bi-eye" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已退会' -%}
+<span class="badge text-bg-secondary"><i class="bi bi-person-x" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已除名' -%}
+<span class="badge text-bg-danger"><i class="bi bi-person-dash" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '通过' -%}
+<span class="badge text-bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '不通过' -%}
+<span class="badge text-bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value in ('待审核', '待面试') -%}
+<span class="badge text-bg-warning"><i class="bi bi-hourglass-split" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已面试' -%}
+<span class="badge text-bg-primary"><i class="bi bi-chat-square-text" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已通过' -%}
+<span class="badge text-bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已拒绝' -%}
+<span class="badge text-bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已撤回' -%}
+<span class="badge text-bg-secondary"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '草稿' -%}
+<span class="badge text-bg-secondary"><i class="bi bi-pencil-square" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已下发' -%}
+<span class="badge text-bg-primary"><i class="bi bi-send" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '已结束' -%}
+<span class="badge text-bg-dark"><i class="bi bi-check2-all" aria-hidden="true"></i>{{ value }}</span>
+{%- elif value == '打卡' -%}
+<span class="badge text-bg-success"><i class="bi bi-calendar-check" aria-hidden="true"></i>{{ value }}</span>
+{%- else -%}
+<span class="badge text-bg-secondary">{{ value }}</span>
+{%- endif -%}
 {% endmacro %}
 <!doctype html>
 <html lang="zh-CN">
@@ -13,44 +51,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% endblock %} · 拾阶</title>
   <link rel="stylesheet" href="{{ url_for('static', path='bootstrap.min.css').path }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='bootstrap-icons.css').path }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css').path }}">
 </head>
 <body>
-  <nav class="navbar navbar-default" aria-label="主导航">
+  <nav class="navbar navbar-expand-md bg-dark navbar-dark" aria-label="主导航">
     <div class="container">
-      <a class="navbar-brand" href="{{ '/members' if member else '/login' }}">拾阶</a>
-      <div class="navbar-right">
+      <a class="navbar-brand" href="{{ '/members' if member else '/login' }}"><i class="bi bi-ladder" aria-hidden="true"></i> 拾阶</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
+              aria-controls="main-nav" aria-expanded="false" aria-label="切换导航">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="main-nav">
         {% if member %}
           {% set codes = request.state.navigation_codes | default([]) %}
-          {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') %}
-          <a class="btn btn-link navbar-btn" href="/members">会员</a>
-          <a class="btn btn-link navbar-btn" href="/members/{{ member.id }}/profile">档案</a>
-          <a class="btn btn-link navbar-btn" href="/awards">奖惩</a>
-          {% endif %}
-          {% if allows(codes, 'system:admin') %}
-          <a class="btn btn-link navbar-btn" href="/members/export">全量导出</a>
-          {% endif %}
-          {% if allows(codes, 'member:read') %}
-          <a class="btn btn-link navbar-btn" href="/stats/members">统计</a>
-          {% endif %}
-          <a class="btn btn-link navbar-btn" href="/me/password">修改密码</a>
-          <form class="navbar-form navbar-right" method="post" action="/auth/logout">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="btn btn-default">登出</button>
-          </form>
+          <ul class="navbar-nav me-auto">
+            {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/members') and not request.url.path.startswith('/members/export') %}active{% endif %}" href="/members">
+                <i class="bi bi-people" aria-hidden="true"></i> 会员
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path == '/members/' ~ member.id ~ '/profile' %}active{% endif %}" href="/members/{{ member.id }}/profile">
+                <i class="bi bi-person-vcard" aria-hidden="true"></i> 档案
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'system:admin') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path == '/members/export' %}active{% endif %}" href="/members/export">
+                <i class="bi bi-download" aria-hidden="true"></i> 全量导出
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'problem:read') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/problems') %}active{% endif %}" href="/problems">
+                <i class="bi bi-journal-code" aria-hidden="true"></i> 题库
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'training:read') or allows(codes, 'training:read:self') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/training') or request.url.path.startswith('/checkins') %}active{% endif %}" href="/training-tasks">
+                <i class="bi bi-clipboard-check" aria-hidden="true"></i> 训练
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/assessments') or request.url.path.startswith('/promotions') or request.url.path.startswith('/assessment-tests') %}active{% endif %}" href="/assessments">
+                <i class="bi bi-patch-check" aria-hidden="true"></i> 考核
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'member:read') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/stats') %}active{% endif %}" href="/stats/members">
+                <i class="bi bi-bar-chart" aria-hidden="true"></i> 档案统计
+              </a>
+            </li>
+            {% endif %}
+            {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/awards') %}active{% endif %}" href="/awards?scope=mine">
+                <i class="bi bi-award" aria-hidden="true"></i> 奖惩
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="navbar-text text-light">
+              <i class="bi bi-person-circle" aria-hidden="true"></i> {{ member.name }}
+              <span class="badge text-bg-info">{{ member.role }}</span>
+            </span>
+            <a class="btn btn-outline-light btn-sm" href="/me/password"><i class="bi bi-key" aria-hidden="true"></i> 修改密码</a>
+            <form method="post" action="/auth/logout" class="d-flex m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> 登出</button>
+            </form>
+          </div>
         {% else %}
-          <a class="btn btn-link navbar-btn" href="/login">登录</a>
-          <a class="btn btn-link navbar-btn" href="/apply">入会申请</a>
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path == '/login' %}active{% endif %}" href="/login">
+                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 登录
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path == '/apply' %}active{% endif %}" href="/apply">
+                <i class="bi bi-person-plus" aria-hidden="true"></i> 入会申请
+              </a>
+            </li>
+          </ul>
         {% endif %}
       </div>
     </div>
   </nav>
   <main class="container">
     {% if error_message %}
-    <div class="alert alert-danger" role="alert" data-error-code="{{ error_code }}">
-      {{ error_message }}（{{ error_code }}）
+    <div class="alert alert-danger d-flex align-items-center gap-2 alert-dismissible fade show" role="alert" data-error-code="{{ error_code }}">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <div>{{ error_message }}（{{ error_code }}）</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
+    </div>
+    {% endif %}
+    {% if success_message %}
+    <div class="alert alert-success d-flex align-items-center gap-2 alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+      <div>{{ success_message }}</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
     </div>
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <footer class="container text-muted small py-3">拾阶 · 0.9.0</footer>
+  <script defer src="{{ url_for('static', path='bootstrap.bundle.min.js').path }}"></script>
+  <script defer src="{{ url_for('static', path='app.js').path }}"></script>
 </body>
 </html>
