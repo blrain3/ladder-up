@@ -1,14 +1,16 @@
 from sqlalchemy import inspect
 
 
-def test_upgrade_from_empty_database(engine):
+def test_upgrade_from_empty_database(engine, migration_head):
     tables = set(inspect(engine).get_table_names())
     assert {
         "department", "member", "permission_point", "member_permission", "member_session",
-        "member_application", "attachment", "audit_log", "sys_config", "alembic_version",
+        "member_application", "attachment", "audit_log", "sys_config", "knowledge_point",
+        "problem", "problem_kp", "problem_solution", "alembic_version",
     } <= tables
     with engine.connect() as connection:
-        assert connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one() == "0003"
+        revision = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one()
+        assert revision == migration_head
 
 
 def test_s2_repairs_legacy_columns_and_downgrades_only_its_changes(tmp_path, monkeypatch):

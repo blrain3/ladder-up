@@ -1,5 +1,7 @@
 import json
+import sqlite3
 import tarfile
+from contextlib import closing
 
 from sqlalchemy import insert, update
 
@@ -9,7 +11,7 @@ from bin.backup import create_backup, sha256
 from bin.restore_check import restore_check
 
 
-def test_backup_and_restore(database_url, engine, tmp_path):
+def test_backup_and_restore(database_url, engine, tmp_path, migration_head):
     uploads = tmp_path / "uploads"
     relative = "2026/11/photo.png"
     photo = uploads / relative
@@ -34,8 +36,13 @@ def test_backup_and_restore(database_url, engine, tmp_path):
     with tarfile.open(archive, "r:gz") as bundle:
         with bundle.extractfile("manifest.json") as stream:
             manifest = json.load(stream)
-        assert manifest["migration"] == "0003"
+        assert manifest["migration"] == migration_head
         assert manifest["files"] == [{"path": f"uploads/{relative}", "sha256": sha256(photo)}]
         database = manifest["database"]
-        assert sha256(archive.parent / database["path"]) == database["sha256"]
+        snapshot_path = archive.parent / database["path"]
+        assert sha256(snapshot_path) == database["sha256"]
+        with closing(sqlite3.connect(snapshot_path)) as snapshot:
+            assert snapshot.execute("SELECT version_num FROM alembic_version").fetchall() == [
+                (manifest["migration"],)
+            ]
     assert restore_check(archive) == manifest["file_count"] == 1

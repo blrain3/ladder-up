@@ -8,11 +8,13 @@ from app.main import app
 BACKEND_OPTIONS = {"use_uvloop": sys.platform != "win32"}
 
 
-def test_health(database_url):
+def test_health(database_url, migration_head):
     with TestClient(app, backend_options=BACKEND_OPTIONS) as client:
         response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"code": 0, "message": "ok", "data": {"db": "ok", "migration": "0003"}}
+    assert response.json() == {
+        "code": 0, "message": "ok", "data": {"db": "ok", "migration": migration_head},
+    }
 
 
 def test_health_rejects_unmigrated_database(database_url, engine):

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import select
 
 from alembic import command
@@ -11,6 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.db import make_engine
+
+
+@pytest.fixture
+def migration_head():
+    return ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini"))).get_current_head()
 
 
 @pytest.fixture
@@ -120,6 +126,28 @@ def admin(accounts, engine):
         session.flush()
         member_id = member.id
     return {"student_no": "admin0001", "id": member_id, "password": password}
+
+
+@pytest.fixture
+def coach(accounts, engine):
+    from app.db import SessionLocal
+    from app.models import Department, Member
+    from app.models.base import local_time
+    from app.security import hash_password
+
+    password = "FixturePassword!"
+    now = local_time()
+    with SessionLocal(bind=engine) as session, session.begin():
+        department = session.scalar(select(Department).where(Department.name == "技术部"))
+        member = Member(
+            student_no="coach0001", name="示例教练", role="coach", dept_id=department.id,
+            member_type="实验室成员", member_status="竞赛实验室成员",
+            password_hash=hash_password(password), created_at=now, updated_at=now,
+        )
+        session.add(member)
+        session.flush()
+        member_id = member.id
+    return {"student_no": "coach0001", "id": member_id, "password": password}
 
 
 @pytest.fixture

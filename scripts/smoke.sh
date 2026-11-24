@@ -21,6 +21,9 @@ export SEED_DEMO_PASSWORD='Demo1234!'
 export APP_ENV=development
 export UPLOADS_DIR="$work/uploads"
 
+migration_head=$("$python" -c 'from alembic.config import Config
+from alembic.script import ScriptDirectory
+print(ScriptDirectory.from_config(Config("alembic.ini")).get_current_head())')
 "$alembic" upgrade head
 "$python" bin/seed.py
 
@@ -66,7 +69,7 @@ print(value)
 ' "$work/body.json" "$@"
 }
 
-[[ $(json_field code) == 0 && $(json_field data db) == ok && $(json_field data migration) == 0003 ]]
+[[ $(json_field code) == 0 && $(json_field data db) == ok && $(json_field data migration) == "$migration_head" ]]
 expect_http 303 -c "$work/admin.jar" -d student_no=admin0001 \
     --data-urlencode "password=$SEED_ADMIN_PASSWORD" "$url/auth/login"
 expect_http 200 -b "$work/admin.jar" "$url/me"
@@ -199,4 +202,58 @@ expect_http 200 -b "$work/demo2.jar" "$url/me"
 expect_http 401 -b "$work/old-demo2.jar" "$url/me"
 [[ $(json_field code) == 40101 ]]
 
-echo 'Smoke PASS: health 0003, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation'
+# S3 题库：教练登录 → 建父/子知识点 → 录题挂子知识点 → 父知识点检索命中 → 详情 XSS 转义 → 提交题解并渲染。
+expect_http 303 -c "$work/coach.jar" -d student_no=demo0004 \
+    --data-urlencode "password=$SEED_DEMO_PASSWORD" "$url/auth/login"
+expect_http 200 -b "$work/coach.jar" "$url/me"
+[[ $(json_field data role) == coach ]]
+coach_csrf=$(json_field data csrf_token)
+
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode "name=图论" "$url/knowledge-points"
+parent_id=$(json_field data id)
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode "name=最短路" --data-urlencode "parent_id=$parent_id" "$url/knowledge-points"
+child_id=$(json_field data id)
+
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode "title=最短路入门" --data-urlencode "difficulty=入门" \
+    --data-urlencode "problem_type=程序" --data-urlencode "source=自建" \
+    --data-urlencode "kp_ids=$child_id" \
+    --data-urlencode "sample_in=1 2" --data-urlencode "sample_out=3" \
+    --data-urlencode "statement=<script>alert(1)</script> <img src=x onerror=alert(1)>" "$url/problems"
+problem_id=$(json_field data id)
+
+expect_http 200 -b "$work/coach.jar" "$url/problems?kp=$parent_id"
+[[ $(json_field data total) == 1 ]]
+"$python" - "$work/body.json" "$problem_id" <<'PYPROB'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as body:
+    data = json.load(body)
+assert data["data"]["items"][0]["id"] == int(sys.argv[2]), data
+PYPROB
+
+expect_http 200 -b "$work/coach.jar" -H 'Accept: text/html' "$url/problems/$problem_id"
+grep -Fq '&lt;script&gt;' "$work/body.json"
+if grep -Fq '<script' "$work/body.json"; then
+    printf 'Smoke FAIL: statement script tag was not escaped\n' >&2
+    exit 1
+fi
+grep -Fq '&lt;img src=x onerror=alert(1)&gt;' "$work/body.json"
+if grep -Fq '<img src=x onerror=' "$work/body.json"; then
+    printf 'Smoke FAIL: onerror attribute was not escaped\n' >&2
+    exit 1
+fi
+
+expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    --data-urlencode 'content_md=**题解** [x](javascript:alert(1))' \
+    "$url/problems/$problem_id/solutions"
+[[ $(json_field code) == 0 ]]
+expect_http 200 -b "$work/coach.jar" -H 'Accept: text/html' "$url/problems/$problem_id"
+grep -Fq '<strong>题解</strong>' "$work/body.json"
+if grep -Fq 'javascript:' "$work/body.json"; then
+    printf 'Smoke FAIL: javascript link was not removed\n' >&2
+    exit 1
+fi
+
+echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered)"

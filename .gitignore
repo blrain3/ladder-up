@@ -38,3 +38,11 @@ docs/_build/
 # 本地备份与运行日志
 backups/
 logs/
+
+# 覆盖率与临时产物
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+__pycache__/
+*.pyc
