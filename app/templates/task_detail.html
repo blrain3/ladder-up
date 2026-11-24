@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}任务详情{% endblock %}
+{% block content %}
+<h1>{{ task.title }}</h1>
+<dl class="dl-horizontal">
+  <dt>状态</dt><dd>{{ task.status }}</dd>
+  <dt>指派类型</dt><dd>{{ task.assignee_type }}</dd>
+  <dt>截止时间</dt><dd>{{ task.deadline_at or '未设置' }}</dd>
+  <dt>阶段</dt><dd>{{ task.phase_name or '—' }}（{{ task.plan_term or '—' }}）</dd>
+  <dt>题目数</dt><dd>{{ task.problem_count }}</dd>
+</dl>
+
+{% if can_assign %}
+<section class="panel panel-default">
+  <div class="panel-heading">指派名单</div>
+  <div class="panel-body">
+    <form method="post" action="/training-tasks/{{ task.id }}/assign">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label for="a-type">指派类型</label>
+        <select id="a-type" class="form-control" name="assignee_type">
+          {% for value in assignee_types %}
+          <option value="{{ value }}" {% if task.assignee_type == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="a-members">指定会员（可多选）</label>
+        <select id="a-members" class="form-control" name="member_ids" multiple size="6">
+          {% for item in members %}
+          <option value="{{ item.id }}" {% if task.assignee_type == '指定会员' and item.id in task.assignees | map(attribute='id') | list %}selected{% endif %}>
+            {{ item.student_no }} {{ item.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">设置指派并下发</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<h2>题目列表</h2>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>#</th><th>题目</th><th>难度</th><th>题型</th></tr></thead>
+    <tbody>
+      {% for problem in task.problems %}
+      <tr>
+        <td>{{ problem.sort_no }}</td>
+        <td><a href="/problems/{{ problem.problem_id }}">{{ problem.title }}</a></td>
+        <td>{{ problem.difficulty }}</td>
+        <td>{{ problem.problem_type }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>我的进度</h2>
+<p>完成率：{{ task.progress.rate }}（{{ task.progress.solved }}/{{ task.progress.total }}）</p>
+<div class="progress">
+  <div class="progress-bar" role="progressbar" style="width: {{ (task.progress.rate * 100) | round(1) }}%;">
+    {{ (task.progress.rate * 100) | round(1) }}%
+  </div>
+</div>
+{% if can_checkin %}<p><a class="btn btn-primary" href="/checkins?task_id={{ task.id }}">去打卡</a></p>{% endif %}
+
+<h2>我的打卡</h2>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>日期</th><th>状态</th><th>耗时(分钟)</th><th>已解数</th><th>备注</th></tr></thead>
+    <tbody>
+      {% for item in task.progress.checkins %}
+      <tr>
+        <td>{{ item.checkin_date }}</td>
+        <td>{{ item.status }}</td>
+        <td>{{ item.minutes or '—' }}</td>
+        <td>
+          {{ item.solved_count }}
+          {% if item.inconsistent %}
+          <span class="text-warning">（记录为 {{ item.stored_solved_count }}，以明细为准）</span>
+          {% endif %}
+        </td>
+        <td>{{ item.note or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

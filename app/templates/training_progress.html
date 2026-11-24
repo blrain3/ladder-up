@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}训练进度{% endblock %}
+{% block content %}
+<h1>训练进度</h1>
+
+<form method="get" action="/training-progress" class="form-inline">
+  <div class="form-group">
+    <label for="q-phase">阶段</label>
+    <select id="q-phase" class="form-control" name="phase_id">
+      <option value="">全部阶段</option>
+      {% for phase in phases %}
+      <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>{{ phase.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-default">筛选</button>
+</form>
+
+{% if progress["view_all"] %}
+<h2>全体完成率</h2>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>会员</th><th>任务数</th><th>已解/总题</th><th>完成率</th><th>进度</th></tr></thead>
+    <tbody>
+      {% for item in progress["items"] %}
+      <tr>
+        <td>{{ item.member_id }}</td>
+        <td>{{ item.task_count }}</td>
+        <td>{{ item.solved }} / {{ item.total }}</td>
+        <td>{{ item.rate }}</td>
+        <td>
+          <div class="progress" style="margin-bottom: 0;">
+            <div class="progress-bar" role="progressbar" style="width: {{ (item.rate * 100) | round(1) }}%;">
+              {{ (item.rate * 100) | round(1) }}%
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<h2>我的完成率</h2>
+{% for item in progress["items"] %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>任务</th><th>阶段</th><th>截止</th><th>已解/总题</th><th>完成率</th><th>进度</th></tr></thead>
+    <tbody>
+      {% for task in item["tasks"] %}
+      <tr>
+        <td><a href="/training-tasks/{{ task.id }}">{{ task.title }}</a></td>
+        <td>{{ task.phase_name or '—' }}</td>
+        <td>{{ task.deadline_at or '—' }}</td>
+        <td>{{ task.solved }} / {{ task.total }}</td>
+        <td>{{ task.rate }}</td>
+        <td>
+          <div class="progress" style="margin-bottom: 0;">
+            <div class="progress-bar" role="progressbar" style="width: {{ (task.rate * 100) | round(1) }}%;">
+              {{ (task.rate * 100) | round(1) }}%
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+{% if pager.previous or pager.next %}
+<nav aria-label="分页">
+  {% if pager.previous %}<a href="{{ pager.previous }}">上一页</a>{% endif %}
+  {% if pager.next %}<a href="{{ pager.next }}">下一页</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

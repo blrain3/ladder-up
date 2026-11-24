@@ -108,8 +108,35 @@ def test_stats_count_task_uses_and_show_missing_correct_rate(client, writer, eng
                for row in stats["problem_references"])
 
     with engine.begin() as connection:
-        connection.exec_driver_sql("CREATE TABLE task_problem (task_id INTEGER, problem_id INTEGER)")
-        connection.exec_driver_sql("INSERT INTO task_problem VALUES (1, ?), (2, ?)", (first, first))
+        connection.exec_driver_sql(
+            "INSERT INTO training_plan (term, created_at) VALUES ('2026-2027-1', :now)",
+            {"now": "2026-09-01 00:00:00"},
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO training_phase (plan_id, name, start_on, end_on) "
+            "SELECT id, '基础', '2026-09-01', '2027-01-31' FROM training_plan "
+            "WHERE term = '2026-2027-1'"
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO training_task (phase_id, title, assignee_type, status, created_at) "
+            "SELECT id, '统计任务', '指定会员', '草稿', :now FROM training_phase "
+            "WHERE name = '基础'",
+            {"now": "2026-09-01 00:00:00"},
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO training_task (phase_id, title, assignee_type, status, created_at) "
+            "SELECT id, '统计任务二', '指定会员', '草稿', :now FROM training_phase "
+            "WHERE name = '基础'",
+            {"now": "2026-09-01 00:00:00"},
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO task_problem (task_id, problem_id) "
+            "SELECT id, ? FROM training_task WHERE title = '统计任务'", (first,)
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO task_problem (task_id, problem_id) "
+            "SELECT id, ? FROM training_task WHERE title = '统计任务二'", (first,)
+        )
         connection.exec_driver_sql("CREATE TABLE oj_submission (problem_id INTEGER, verdict TEXT)")
         connection.exec_driver_sql(
             "INSERT INTO oj_submission VALUES (?, 'AC'), (?, 'WA')", (first, first),
