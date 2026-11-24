@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}测评{% endblock %}
+{% block content %}
+<h1>周测 / 月测</h1>
+
+{% if can_create %}
+<section class="panel panel-default">
+  <div class="panel-heading">新建测评</div>
+  <div class="panel-body">
+    <form method="post" action="/assessment-tests">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label for="a-title">标题</label>
+        <input id="a-title" class="form-control" name="title" required maxlength="120"
+               placeholder="如 第一周周测">
+      </div>
+      <div class="form-group">
+        <label for="a-type">类型</label>
+        <select id="a-type" class="form-control" name="test_type" required>
+          {% for value in test_types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="a-held-on">测评日期</label>
+        <input id="a-held-on" class="form-control" name="held_on" type="date" required>
+      </div>
+      <button type="submit" class="btn btn-primary">保存测评</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead><tr><th>标题</th><th>类型</th><th>日期</th><th>操作</th></tr></thead>
+    <tbody>
+      {% for item in tests["items"] %}
+      <tr>
+        <td>{{ item.title }}</td>
+        <td>{{ item.test_type }}</td>
+        <td>{{ item.held_on }}</td>
+        <td>
+          {% if can_score %}
+          <a href="/assessment-tests/{{ item.id }}/scores">录分</a>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p>共 {{ tests.total }} 场测评</p>
+<nav aria-label="分页">
+  {% if tests.links.previous %}<a href="{{ tests.links.previous }}">上一页</a>{% endif %}
+  {% if tests.links.next %}<a href="{{ tests.links.next }}">下一页</a>{% endif %}
+</nav>
+{% endblock %}

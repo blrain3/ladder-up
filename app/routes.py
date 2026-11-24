@@ -18,6 +18,20 @@ from sqlalchemy.orm import Session
 from starlette.datastructures import FormData, UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
 
+from bin.job import JobFailed, run_job
+from bin.job import assess_term as run_assess_term
+
+from .assessment import (
+    AssessmentError,
+    active_target,
+    current_term,
+    expel,
+    promote,
+    promotion_items,
+    record_scores,
+    term_interval,
+    withdraw,
+)
 from .auth import (
     active_member,
     allows,
@@ -36,19 +50,23 @@ from .auth import (
 from .db import get_session
 from .markdown import render
 from .models import (
+    AssessmentTest,
     Attachment,
     Checkin,
     CheckinProblem,
     Department,
+    JobRun,
     KnowledgePoint,
     Member,
     MemberApplication,
+    MemberAssessment,
     Problem,
     ProblemKp,
     ProblemSolution,
     SysConfig,
     TaskAssignee,
     TaskProblem,
+    TestScore,
     TrainingPhase,
     TrainingPlan,
     TrainingTask,
@@ -678,7 +696,7 @@ def admin_applications(request: Request, status: str | None = Query(None),
                        size: int = Query(20, ge=1, le=100),
                        member: Member = Depends(APPLICATION_READER),
                        session: Session = Depends(get_session)):
-    filters = []
+    filters = [MemberApplication.apply_type == "入会"]
     if status:
         filters.append(MemberApplication.status == status)
     total = session.scalar(select(func.count()).select_from(MemberApplication).where(*filters))
@@ -1623,11 +1641,14 @@ def count_rows(session, statement):
     return session.scalar(select(func.count()).select_from(statement.order_by(None).subquery()))
 
 
-def training_member_scope(member):
-    statement = active_members_query()
+def approve_member_scope(member):
     if member.role == "dept_admin":
-        statement = statement.where(Member.dept_id == member.dept_id) if member.dept_id else statement.where(false())
-    return statement
+        return Member.dept_id == member.dept_id if member.dept_id else false()
+    return true()
+
+
+def training_member_scope(member):
+    return active_members_query().where(approve_member_scope(member))
 
 
 def training_page(request, number, page_size, has_next):
@@ -2151,3 +2172,367 @@ def training_alerts(request: Request, phase_id: int | None = Query(None),
         return page(request, "training_alerts.html", alerts=data, phases=phases,
                     selected_phase_id=phase_id, pager=training_page(request, page_number, page_size, has_next))
     return success(data)
+
+
+# ---------------------------------------------------------------------------
+# S5 考核与转正：周测录分、考核计算、转正、退会与除名
+# ---------------------------------------------------------------------------
+
+ASSESSMENT_TEST_TYPES = ("周测", "月测")
+ASSESSMENT_READER = require_permission("member:read", "member:read:self", target_type="assessment")
+ASSESSMENT_RUNNER = require_permission("system:admin", target_type="assessment")
+MEMBER_APPROVER = require_permission("member:approve", target_type="member")
+
+
+def active_assessment_test(session, test_id):
+    test = session.get(AssessmentTest, test_id)
+    if test is None:
+        raise api_error(404, 40401, "测评不存在")
+    return test
+
+
+def assessment_test_payload(test):
+    return {
+        "id": test.id, "title": test.title, "test_type": test.test_type,
+        "held_on": test.held_on, "created_at": test.created_at,
+    }
+
+
+def assessment_score_rows(data):
+    if isinstance(data, FormData):
+        rows = []
+        for member_id in multi_ids_field(data, "member_ids"):
+            raw_solved = data.get(f"solved_{member_id}")
+            raw_score = data.get(f"score_{member_id}")
+            if (raw_solved, raw_score) == (data.get(f"old_solved_{member_id}", ""), data.get(f"old_score_{member_id}", "")):
+                continue
+            rows.append({"member_id": member_id, "solved_count": raw_solved, "score": raw_score,
+                         "version": data.get(f"version_{member_id}")})
+        return rows
+    raw = data.get("rows")
+    if raw in (None, ""):
+        raise api_error(400, 40001, "请提交成绩数据")
+    if not isinstance(raw, list) or not raw:
+        raise api_error(400, 40001, "请提交至少一条成绩")
+    return raw
+
+
+def assessment_items_payload(session, filters, pagination):
+    statement = (
+        select(MemberAssessment, Member)
+        .join(Member, Member.id == MemberAssessment.member_id)
+        .where(*filters)
+        .order_by(MemberAssessment.term.desc(), MemberAssessment.assessed_at.desc(), Member.id)
+    )
+    items = []
+    rows, metadata = s5_page(session, statement, pagination)
+    for assessment, target in rows:
+        items.append({
+            "id": assessment.id, "member_id": target.id, "student_no": target.student_no,
+            "name": target.name, "term": assessment.term, "result": assessment.result,
+            "in_watchlist": assessment.in_watchlist, "assessed_at": assessment.assessed_at,
+            "remark": assessment.remark,
+        })
+    return items, metadata
+
+
+def s5_pagination(request: Request, number: int = Query(1, alias="page", ge=1, le=2**63 // 100),
+                  size: int = Query(50, alias="page_size", ge=1, le=100)):
+    return request, number, size
+
+
+def s5_page(session, statement, pagination):
+    request, number, size = pagination
+    total = count_rows(session, statement)
+    rows = session.execute(statement.offset((number - 1) * size).limit(size)).all()
+    return rows, {"total": total, "page": number, "page_size": size,
+                  "links": training_page(request, number, size, number * size < total)}
+
+
+def s5_read_scope(request, member, session, permission):
+    if request.query_params.get("scope") == "mine":
+        codes = permission_codes(member, session)
+        if any(allows(codes, code) for code in ("member:read:self", "member:read", permission)):
+            if "member_id" in request.query_params and request.query_params["member_id"] != str(member.id):
+                deny(request, session)
+            return Member.id == member.id
+    if not allows(permission_codes(member, session), permission):
+        deny(request, session)
+    return approve_member_scope(member)
+
+
+def s5_target(session, actor, target_id):
+    if session.scalar(select(Member.id).where(Member.id == target_id, approve_member_scope(actor))) is None:
+        raise api_error(404, 40401, "会员不存在")
+
+
+@router.get("/assessment-tests")
+def assessment_tests_page(request: Request, member: Member = Depends(TRAINING_READER),
+                          pagination=Depends(s5_pagination), session: Session = Depends(get_session)):
+    rows, metadata = s5_page(session, select(AssessmentTest).order_by(
+        AssessmentTest.held_on.desc(), AssessmentTest.id.desc(),
+    ), pagination)
+    data = {**metadata, "items": [assessment_test_payload(test) for (test,) in rows]}
+    if wants_html(request):
+        can_score = allows(permission_codes(member, session), "training:approve")
+        return page(request, "assessment_tests.html", tests=data, can_score=can_score,
+                    test_types=ASSESSMENT_TEST_TYPES,
+                    can_create=can_score and member.role in {"coach", "sys_admin"})
+    return success(data)
+
+
+@router.post("/assessment-tests")
+def create_assessment_test(request: Request, data=Depends(payload),
+                           member: Member = Depends(TRAINING_APPROVER),
+                           session: Session = Depends(get_session)):
+    if member.role not in {"coach", "sys_admin"}:
+        deny(request, session)
+    with bank_write(session, "测评保存冲突", legacy_busy_response=False):
+        title = required_text(data, "title", "标题", 120)
+        test_type = enum_field(data, "test_type", ASSESSMENT_TEST_TYPES, "类型")
+        held_on = parse_day_field(data, "held_on", "测评日期")
+        test = AssessmentTest(
+            title=title, test_type=test_type, held_on=held_on.isoformat(),
+            created_at=local_time(),
+        )
+        session.add(test)
+        session.flush()
+        audit(request, session, "assessment.test.created", actor_id=member.id, target_id=test.id,
+              target_type="assessment_test",
+              detail={"title": title, "test_type": test_type, "held_on": test.held_on})
+    if wants_html(request):
+        return redirect("/assessment-tests")
+    return success(assessment_test_payload(test))
+
+
+@router.get("/assessment-tests/{id}/scores")
+def assessment_scores_page(request: Request, id: int = Depends(object_id),
+                           member: Member = Depends(TRAINING_APPROVER),
+                           pagination=Depends(s5_pagination), session: Session = Depends(get_session)):
+    test = active_assessment_test(session, id)
+    rows, metadata = s5_page(session, training_member_scope(member).order_by(Member.student_no), pagination)
+    members = [target for (target,) in rows]
+    existing = {
+        row.member_id: row
+        for row in session.scalars(select(TestScore).where(
+            TestScore.test_id == id, TestScore.member_id.in_([target.id for target in members]),
+        ))
+    }
+    items = []
+    for target in members:
+        score = existing.get(target.id)
+        items.append({
+            "id": target.id, "student_no": target.student_no, "name": target.name,
+            "solved_count": score.solved_count if score else None,
+            "score": score.score if score else None,
+            "version": score.version if score else 0,
+        })
+    data = {**metadata, "test": assessment_test_payload(test), "items": items}
+    if wants_html(request):
+        return page(request, "assessment_scores.html", scores=data)
+    return success(data)
+
+
+@router.post("/assessment-tests/{id}/scores")
+def submit_assessment_scores(request: Request, id: int = Depends(object_id),
+                             data=Depends(payload),
+                             member: Member = Depends(TRAINING_APPROVER),
+                             session: Session = Depends(get_session)):
+    with bank_write(session, "成绩录入冲突", legacy_busy_response=False):
+        test = active_assessment_test(session, id)
+        rows = assessment_score_rows(data)
+        try:
+            result = record_scores(session, test.id, rows, member.id, approve_member_scope(member))
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+        audit(request, session, "assessment.scores.recorded", actor_id=member.id,
+              target_id=test.id, target_type="assessment_test",
+              detail={"test_id": test.id, **result})
+    if wants_html(request):
+        return redirect(f"/assessment-tests/{id}/scores")
+    return success(result)
+
+
+@router.get("/assessments")
+def assessments_page(request: Request, term: str | None = Query(None),
+                     member: Member = Depends(ASSESSMENT_READER),
+                     pagination=Depends(s5_pagination), session: Session = Depends(get_session)):
+    scope = s5_read_scope(request, member, session, "member:read")
+    filters = [Member.deleted_at.is_(None), scope]
+    if term:
+        filters.append(MemberAssessment.term == term)
+    items, metadata = assessment_items_payload(session, filters, pagination)
+    data = {**metadata, "items": items, "term": term or ""}
+    if wants_html(request):
+        can_run = allows(permission_codes(member, session), "system:admin")
+        jobs = session.scalars(
+            select(JobRun).order_by(JobRun.started_at.desc(), JobRun.id.desc()).limit(20)
+        ).all() if can_run else []
+        return page(request, "assessments.html", assessments=data, jobs=jobs, can_run=can_run)
+    return success(data)
+
+
+@router.post("/assessments/run")
+def run_assessment(request: Request, data=Depends(payload),
+                   member: Member = Depends(ASSESSMENT_RUNNER),
+                   session: Session = Depends(get_session)):
+    term = required_text(data, "term", "学期", 20)
+    try:
+        term_interval(term)
+    except ValueError as exc:
+        raise api_error(400, 40001, str(exc)) from None
+    biz_date = datetime.now(SHANGHAI).date().isoformat()
+    try:
+        result = run_job(session, "assess", biz_date, lambda s: run_assess_term(s, term),
+                         term=term, request_id=request.state.request_id)
+    except JobFailed:
+        raise api_error(500, 50001, "", {"request_id": request.state.request_id}) from None
+    audit(request, session, "assessment.run", actor_id=member.id, target_type="assessment",
+          detail={"term": term, **result})
+    session.commit()
+    if wants_html(request):
+        return redirect("/assessments")
+    return success(result)
+
+
+@router.get("/promotions")
+def promotions_page(request: Request, term: str | None = Query(None),
+                    member: Member = Depends(authenticated),
+                    pagination=Depends(s5_pagination), session: Session = Depends(get_session)):
+    scope = s5_read_scope(request, member, session, "member:approve")
+    mine = request.query_params.get("scope") == "mine"
+    active_term = current_term(session)
+    selected_term = term or active_term
+    try:
+        term_interval(selected_term)
+    except ValueError as exc:
+        raise api_error(400, 40001, str(exc)) from None
+    statement = select(Member).where(Member.deleted_at.is_(None), scope).order_by(Member.student_no)
+    if not mine:
+        statement = statement.where(Member.member_status == "观察会员")
+    rows, metadata = s5_page(session, statement, pagination)
+    items = promotion_items(session, [target for (target,) in rows], selected_term)
+    for item in items:
+        if selected_term != active_term:
+            item["ready"] = False
+            item["reasons"].append("历史学期只读")
+    data = {**metadata, "term": selected_term, "items": items, "mine": mine}
+    if wants_html(request):
+        return page(request, "promotions.html", promotions=data)
+    return success(data)
+
+
+@router.post("/members/{id}/promote")
+def promote_member(request: Request, id: int = Depends(object_id), data=Depends(payload),
+                   member: Member = Depends(MEMBER_APPROVER),
+                   session: Session = Depends(get_session)):
+    with bank_write(session, "转正冲突", legacy_busy_response=False):
+        try:
+            s5_target(session, member, id)
+            promote(session, id, member.id, data.get("term") or request.query_params.get("term"))
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+    if wants_html(request):
+        return redirect("/promotions")
+    return success({"id": id, "member_status": "正式会员", "member_type": "正式会员"})
+
+
+def close_pending_leave(session, member_id, reviewer_id, status, note):
+    result = session.execute(update(MemberApplication).where(
+        MemberApplication.member_id == member_id, MemberApplication.apply_type == "退会",
+        MemberApplication.status == "待审核", MemberApplication.active_flag == "1",
+    ).values(status=status, active_flag=None, review_note=note,
+             reviewed_by=reviewer_id, reviewed_at=local_time()))
+    return result.rowcount
+
+
+@router.post("/members/{id}/leave")
+def request_leave(request: Request, id: int = Depends(object_id), data=Depends(payload),
+                  member: Member = Depends(authenticated), session: Session = Depends(get_session)):
+    if member.id != id:
+        deny(request, session, id)
+    with bank_write(session, "已有待审核的退会申请", legacy_busy_response=False):
+        try:
+            session.refresh(member)
+            active_target(session, id, action="退会")
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+        application = MemberApplication(
+            member_id=id, student_no=member.student_no, name=member.name, apply_type="退会",
+            status="待审核", active_flag="1", created_at=local_time(),
+        )
+        session.add(application)
+        session.flush()
+        audit(request, session, "member.leave.requested", actor_id=id, target_id=id,
+              detail={"application_id": application.id, "reason": optional_text(data, "reason", 500)})
+    return success({"id": id, "application_id": application.id, "status": "待审核",
+                    "member_status": member.member_status})
+
+
+@router.post("/members/{id}/leave/approve")
+def approve_leave(request: Request, id: int = Depends(object_id), data=Depends(payload),
+                  member: Member = Depends(MEMBER_APPROVER), session: Session = Depends(get_session)):
+    if member.id == id:
+        deny(request, session, id)
+    decision = data.get("decision", "approve")
+    if decision not in ("approve", "reject"):
+        raise api_error(400, 40001, "审批决定无效")
+    status = "已通过" if decision == "approve" else "已拒绝"
+    note = optional_text(data, "reason", 500)
+    with bank_write(session, "退会审批冲突", legacy_busy_response=False):
+        s5_target(session, member, id)
+        try:
+            target = active_target(session, id, action="退会")
+            if close_pending_leave(session, id, member.id, status, note) != 1:
+                raise api_error(404, 40401, "待审核退会申请不存在")
+            if decision == "approve":
+                withdraw(session, id, member.id, note, action="member.leave.approved")
+            else:
+                audit(request, session, "member.leave.rejected", actor_id=member.id, target_id=id,
+                      detail={"reason": note})
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+    if wants_html(request):
+        return page(request, "member_left.html", title=status,
+                    message="该会员已退会，其会话已全部撤销" if decision == "approve" else "退会申请已拒绝")
+    return success({"id": id, "status": status, "member_status": target.member_status})
+
+
+@router.post("/members/{id}/withdraw")
+def withdraw_member(request: Request, id: int = Depends(object_id), data=Depends(payload),
+                    member: Member = Depends(MEMBER_APPROVER),
+                    session: Session = Depends(get_session)):
+    if member.id == id:
+        deny(request, session, id, "member")
+    with bank_write(session, "退会冲突", legacy_busy_response=False):
+        reason = optional_text(data, "reason", 500)
+        try:
+            s5_target(session, member, id)
+            withdraw(session, id, member.id, reason)
+            close_pending_leave(session, id, member.id, "已通过", reason)
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+    if wants_html(request):
+        return page(request, "member_left.html", title="退会成功", message="已退出，需重新登录")
+    return success({"id": id, "member_status": "已退会", "message": "已退出，需重新登录"})
+
+
+@router.post("/members/{id}/expel")
+def expel_member(request: Request, id: int = Depends(object_id), data=Depends(payload),
+                 member: Member = Depends(MEMBER_APPROVER),
+                 session: Session = Depends(get_session)):
+    reason = data.get("reason")
+    if not isinstance(reason, str) or not 10 <= len(reason.strip()) <= 500:
+        raise api_error(400, 40001, "除名事由须为 10–500 字")
+    reason = reason.strip()
+    with bank_write(session, "除名冲突", legacy_busy_response=False):
+        try:
+            s5_target(session, member, id)
+            expel(session, id, member.id, reason)
+            close_pending_leave(session, id, member.id, "已拒绝", "该会员已除名")
+        except AssessmentError as exc:
+            raise api_error(exc.status, exc.code, str(exc)) from None
+    if wants_html(request):
+        return page(request, "member_left.html", title="除名成功",
+                    message="该会员已除名，其会话已全部撤销")
+    return success({"id": id, "member_status": "已除名", "message": "已除名，需重新登录"})

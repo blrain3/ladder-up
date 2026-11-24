@@ -6,7 +6,9 @@ def test_upgrade_from_empty_database(engine, migration_head):
     assert {
         "department", "member", "permission_point", "member_permission", "member_session",
         "member_application", "attachment", "audit_log", "sys_config", "knowledge_point",
-        "problem", "problem_kp", "problem_solution", "alembic_version",
+        "problem", "problem_kp", "problem_solution", "training_plan", "training_phase",
+        "training_task", "task_problem", "task_assignee", "checkin", "checkin_problem",
+        "assessment_test", "test_score", "member_assessment", "job_run", "alembic_version",
     } <= tables
     with engine.connect() as connection:
         revision = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one()
@@ -79,6 +81,41 @@ def test_s4_downgrade_removes_only_its_threshold(tmp_path, monkeypatch):
             )
         command.upgrade(config, "0005")
         command.downgrade(config, "0004")
+        with engine.connect() as connection:
+            assert connection.exec_driver_sql(query).scalar_one() == "0.72"
+    finally:
+        engine.dispose()
+
+
+def test_s5_downgrade_removes_only_its_threshold(tmp_path, monkeypatch):
+    from alembic.config import Config
+
+    from alembic import command
+    from app.db import make_engine
+
+    url = f"sqlite:///{tmp_path / 's5-downgrade.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    monkeypatch.setenv("APP_ENV", "test")
+    config = Config("alembic.ini")
+    engine = make_engine(url)
+    query = "SELECT config_value FROM sys_config WHERE config_key = 'training.promote_threshold'"
+    try:
+        command.upgrade(config, "0006")
+        with engine.connect() as connection:
+            assert connection.exec_driver_sql(query).scalar_one() == "0.6"
+        command.downgrade(config, "0005")
+        assert {"assessment_test", "test_score", "member_assessment", "job_run"}.isdisjoint(
+            inspect(engine).get_table_names()
+        )
+        assert "left_on" in {column["name"] for column in inspect(engine).get_columns("member")}
+        with engine.begin() as connection:
+            assert connection.exec_driver_sql(query).scalar_one_or_none() is None
+            connection.exec_driver_sql(
+                "INSERT INTO sys_config (config_key, config_value, updated_at) "
+                "VALUES ('training.promote_threshold', '0.72', '2026-01-01')"
+            )
+        command.upgrade(config, "0006")
+        command.downgrade(config, "0005")
         with engine.connect() as connection:
             assert connection.exec_driver_sql(query).scalar_one() == "0.72"
     finally:

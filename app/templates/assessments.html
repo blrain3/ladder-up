@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}考核结果{% endblock %}
+{% block content %}
+<h1>考核结果</h1>
+
+{% if can_run %}
+<section class="panel panel-default">
+  <div class="panel-heading">运行考核计算</div>
+  <div class="panel-body">
+    <form method="post" action="/assessments/run">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label for="a-term">学期</label>
+        <input id="a-term" class="form-control" name="term" required maxlength="20"
+               placeholder="如 2026-2027-1" value="{{ assessments.term }}">
+      </div>
+      <button type="submit" class="btn btn-primary">运行考核</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<form method="get" class="form-inline">
+  {% if request.query_params.get("scope") == "mine" %}<input type="hidden" name="scope" value="mine">{% endif %}
+  <label for="term-filter">学期</label>
+  <input id="term-filter" name="term" value="{{ assessments.term }}" placeholder="如 2026-2027-1">
+  <button type="submit" class="btn btn-default">筛选</button>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr><th>学期</th><th>学号</th><th>姓名</th><th>结果</th><th>观察名单</th>
+          <th>考核时间</th><th>备注</th></tr>
+    </thead>
+    <tbody>
+      {% for item in assessments["items"] %}
+      <tr>
+        <td>{{ item.term }}</td>
+        <td>{{ item.student_no }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.result }}</td>
+        <td>{{ "是" if item.in_watchlist else "否" }}</td>
+        <td>{{ item.assessed_at }}</td>
+        <td>{{ item.remark or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if can_run %}
+<h2>最近任务运行</h2>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr><th>任务</th><th>学期</th><th>业务日</th><th>状态</th><th>尝试次数</th>
+          <th>开始时间</th><th>结束时间</th><th>详情</th></tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <td>{{ job.job_name }}</td>
+        <td>{{ job.term }}</td>
+        <td>{{ job.biz_date }}</td>
+        <td>{{ job.status }}</td>
+        <td>{{ job.attempts }}</td>
+        <td>{{ job.started_at }}</td>
+        <td>{{ job.finished_at or '—' }}</td>
+        <td>{{ job.detail or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">暂无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+<nav aria-label="分页">
+  {% if assessments.links.previous %}<a href="{{ assessments.links.previous }}">上一页</a>{% endif %}
+  {% if assessments.links.next %}<a href="{{ assessments.links.next }}">下一页</a>{% endif %}
+</nav>
+{% endblock %}
