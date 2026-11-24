@@ -1,0 +1,15 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+[*] --> 筹备中 : 确定时段与名单
+筹备中 --> 进行中 : 集训开始
+进行中 --> 已结束 : 集训结束
+已结束 --> 已归档 : 总结与成绩归档
+已归档 --> [*]
+@enduml

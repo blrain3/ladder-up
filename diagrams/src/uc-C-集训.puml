@@ -1,0 +1,40 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+left to right direction
+actor "集训负责人" as L
+actor "集训队员" as MEM
+actor "队长" as CAP
+
+rectangle "集训管理（寒假 / 暑假统一）" {
+  usecase "集训计划\nFR-C-01" as U1
+  usecase "集训人员\nFR-C-02" as U2
+  usecase "集训组队\nFR-C-03" as U3
+  usecase "每日任务\nFR-C-04" as U4
+  usecase "集训考勤\nFR-C-05" as U5
+  usecase "多校赛管理\nFR-C-06" as U6
+  usecase "多校赛成绩\nFR-C-07" as U7
+  usecase "集训物资\nFR-C-08" as U8
+  usecase "集训总结\nFR-C-09" as U9
+  usecase "请假审批" as U5a
+}
+
+L --> U1
+L --> U2
+L --> U4
+L --> U8
+L --> U9
+CAP --> U3
+MEM --> U5
+MEM --> U9
+MEM --> U7
+U5 ..> U5a : <<extend>>
+U6 ..> U7 : 成绩同步
+U4 ..> U5 : 当日考勤
+@enduml

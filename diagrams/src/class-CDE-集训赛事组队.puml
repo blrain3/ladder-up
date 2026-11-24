@@ -1,0 +1,74 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+
+class "会员" as Member {
+  +学号 : string
+  +姓名 : string
+  +状态 : enum
+}
+
+hide empty methods
+package "集训 · 赛事 · 组队" {
+  class "集训" as Camp {
+    +时段 : enum
+    +起止 : date
+  }
+  class "考勤记录" as Attend {
+    +日期 : date
+    +签到时间 : time
+    +请假类型 : enum
+  }
+  class "多校赛" as Multi {
+    +名称 : string
+    +平台 : string
+    +日期 : date
+  }
+  class "赛事" as Contest {
+    +名称 : string
+    +类型 : enum
+    +赛制 : string
+    +名额 : int
+  }
+  class "赛事报名" as Signup {
+    +状态 : enum
+    +费用 : decimal
+  }
+  class "赛站" as Site {
+    +地区 : string
+    +日期 : date
+  }
+  class "比赛成绩" as Result {
+    +名次 : int
+    +解题数 : int
+    +罚时 : int
+  }
+  class "队伍" as Team {
+    +名称 : string
+    +状态 : enum
+  }
+  class "队伍排名" as Rank {
+    +周期 : string
+    +名次 : int
+  }
+}
+Camp "1" -- "0..*" Attend
+Attend "0..*" -- "1" Member
+Camp "1" -- "0..*" Multi
+Camp "1" -- "0..*" Team : 集训组队
+Team "1" -- "0..*" Signup
+Contest "1" -- "0..*" Signup
+Contest "1" -- "0..*" Site
+Contest "1" -- "0..*" Result
+Team "1" -- "0..*" Result
+Team "1" -- "0..*" Rank
+Multi "1" -- "0..*" Result
+
+@enduml

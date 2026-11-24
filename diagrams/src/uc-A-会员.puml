@@ -1,0 +1,42 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+left to right direction
+actor "观察会员" as OB
+actor "正式会员" as MB
+actor "管理会员\n(会长/部长)" as AD
+actor "指导教师" as T
+
+rectangle "会员与协会管理" {
+  usecase "会员信息管理\nFR-A-01" as U1
+  usecase "会员分类与权限\nFR-A-02" as U2
+  usecase "入会流程\nFR-A-03" as U3
+  usecase "退会与除名\nFR-A-04" as U4
+  usecase "考核管理\nFR-A-05" as U5
+  usecase "奖惩管理\nFR-A-06" as U6
+  usecase "会员档案\nFR-A-07" as U7
+  usecase "数据统计分析\nFR-A-08" as U8
+  usecase "资格审核" as U3a
+  usecase "观察名单与转正" as U5a
+}
+
+OB --> U3
+OB --> U7
+MB --> U3
+MB --> U7
+AD --> U1
+AD --> U4
+AD --> U5
+AD --> U6
+T --> U8
+T --> U7
+U3 ..> U3a : <<include>>
+U5 ..> U5a : <<include>>
+U2 --> U8
+@enduml

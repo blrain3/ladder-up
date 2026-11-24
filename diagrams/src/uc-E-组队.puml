@@ -1,0 +1,35 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+left to right direction
+actor "正式会员" as M
+actor "队长" as CAP
+actor "部长/会长" as AD
+
+rectangle "组队管理" {
+  usecase "能力评估\nFR-E-01" as U1
+  usecase "组队建议\nFR-E-02" as U2
+  usecase "队伍组建\nFR-E-03" as U3
+  usecase "队伍档案\nFR-E-04" as U4
+  usecase "组队训练\nFR-E-05" as U5
+  usecase "队伍调整\nFR-E-06" as U6
+  usecase "队伍排名\nFR-E-07" as U7
+}
+
+M --> U1
+M --> U2
+CAP --> U3
+CAP --> U5
+CAP --> U6
+AD --> U7
+AD --> U6
+U2 ..> U1 : 依赖能力数据
+U3 ..> U1 : 参考评估
+U5 ..> U4 : 沉淀记录
+@enduml

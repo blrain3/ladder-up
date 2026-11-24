@@ -1,0 +1,49 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+left to right direction
+actor "正式会员" as MB
+actor "部长" as MIN
+actor "系统定时任务" as SYS
+
+rectangle "题库与训练管理" {
+  usecase "知识点管理\nFR-B-01" as U1
+  usecase "题目录入\nFR-B-02" as U2
+  usecase "题目检索\nFR-B-03" as U3
+  usecase "难度体系\nFR-B-04" as U4
+  usecase "题解管理\nFR-B-05" as U5
+  usecase "训练计划\nFR-B-07" as U7
+  usecase "训练阶段\nFR-B-08" as U8
+  usecase "训练任务\nFR-B-09" as U9
+  usecase "打卡记录\nFR-B-10" as U10
+  usecase "进度跟踪\nFR-B-11" as U11
+  usecase "效果评估\nFR-B-12" as U12
+  usecase "个人训练规划\nFR-B-14" as U14
+  usecase "外部OJ对接\nFR-B-15" as U15
+  usecase "题目统计\nFR-B-06" as U6
+}
+
+MIN --> U1
+MIN --> U2
+MIN --> U4
+MIN --> U7
+MIN --> U8
+MIN --> U9
+MIN --> U12
+MIN --> U15
+MB --> U3
+MB --> U10
+MB --> U11
+MB --> U14
+U2 ..> U5 : 配套
+U9 ..> U6 : 统计
+U12 ..> U11 : 更新进度
+SYS --> U11 : 落后预警
+SYS --> U10 : 打卡提醒
+@enduml

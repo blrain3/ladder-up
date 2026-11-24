@@ -1,0 +1,22 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 170
+skinparam shadowing false
+autonumber
+actor "管理员" as ADM
+participant "统计服务" as S
+database "业务库" as DB
+participant "导出模块" as EXP
+participant "备份任务" as BK
+
+ADM -> S : 发起年度归档（学年）
+S -> DB : 汇总会员档案（信息、奖惩、考核）
+S -> DB : 汇总训练记录与测评成绩
+S -> DB : 汇总赛事成绩与获奖
+S -> EXP : 生成 Excel / CSV
+EXP --> ADM : 归档包（按要求分表）
+ADM -> S : 确认无误
+S -> DB : 写入归档标记（锁定学年数据）
+BK -> DB : 全量备份至备份目录
+BK --> ADM : 备份路径与校验和
+@enduml

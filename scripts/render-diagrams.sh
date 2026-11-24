@@ -7,10 +7,10 @@ if ! command -v plantuml >/dev/null 2>&1; then
   exit 1
 fi
 shopt -s nullglob
-files=(*.puml)
+files=(src/*.puml)
 if [ ${#files[@]} -eq 0 ]; then
-  echo "diagrams/ 下没有 .puml 文件"
+  echo "diagrams/src/ 下没有 .puml 文件"
   exit 0
 fi
-plantuml -tpng "${files[@]}"
-echo "已渲染 ${#files[@]} 张图"
+plantuml -tpng -o .. "${files[@]}"
+echo "已渲染 ${#files[@]} 张图到 diagrams/"

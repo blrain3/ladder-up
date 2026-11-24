@@ -1,0 +1,38 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+skinparam arrowColor #666666
+left to right direction
+
+actor "会员" as M
+actor "队长" as CAP
+actor "教练/指导教师" as COACH
+
+rectangle "会员与协会管理\n(域 A)" as A
+rectangle "题库与训练管理\n(域 B)" as B
+rectangle "集训管理\n(域 C)" as C
+rectangle "赛事管理\n(域 D)" as D
+rectangle "组队管理\n(域 E)" as E
+rectangle "智能服务\n(域 F · 二期)" as F
+
+M -- A : 会员主数据
+M -- B : 训练与打卡
+M -- E : 组队与能力评估
+CAP -- E : 队伍管理
+COACH -- D : 资格与赛站
+COACH -- C : 集训计划
+
+A <-- B : 只读引用会员/部门
+B <-- E : 能力评估取训练数据
+E --> D : 队伍报名与成绩
+C --> B : 集训任务取题目包
+E <-- C : 集训组队
+B <.. F : 画像依赖训练数据
+E <.. F : 组队建议依赖性格与能力
+@enduml

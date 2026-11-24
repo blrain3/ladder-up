@@ -1,0 +1,18 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+[*] --> 策划中 : 立项
+策划中 --> 报名中 : 方案与规则发布
+报名中 --> 报名截止 : 到达截止时间
+报名中 --> 策划中 : 名额不足，重新策划
+报名截止 --> 进行中 : 开赛
+进行中 --> 已结束 : 比赛结束并封榜
+已结束 --> 已归档 : 成绩与题解归档
+已归档 --> [*]
+@enduml

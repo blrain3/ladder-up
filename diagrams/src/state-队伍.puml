@@ -1,0 +1,22 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+[*] --> 筹集中 : 发起组队
+筹集中 --> 组建完成 : 满 3 人并确定队长
+筹集中 --> [*] : 长期无人加入，撤销
+组建完成 --> 训练中 : 开始组队训练
+训练中 --> 调整中 : 提出调整申请
+调整中 --> 组建完成 : 调整审批通过
+调整中 --> 训练中 : 调整驳回
+训练中 --> 参赛中 : 报名并获参赛资格
+参赛中 --> 训练中 : 赛事结束
+训练中 --> 已解散 : 解散申请通过
+组建完成 --> 已解散 : 解散
+已解散 --> [*]
+@enduml

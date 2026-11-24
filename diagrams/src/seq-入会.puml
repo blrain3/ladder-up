@@ -1,0 +1,43 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 170
+skinparam shadowing false
+autonumber
+actor "申请人" as U
+participant "入会服务" as S
+participant "考核服务" as A
+database "会员库" as DB
+participant "通知服务" as N
+
+U -> S : 提交报名表（学号、专业、年级、联系方式）
+S -> DB : 校验学号唯一、是否在观察名单
+alt 校验失败
+  S --> U : 返回冲突原因
+else 校验通过
+  S -> DB : 写入申请（状态=待审核）
+  S -> N : 通知部长审核
+  N --> U : 已收到申请
+end
+
+S -> S : 部长审核材料
+alt 审核不通过
+  S -> DB : 状态=已拒绝
+  S -> N : 通知未通过
+else 审核通过
+  S -> DB : 状态=待面试并安排面试
+  S -> N : 发送面试安排
+  U -> S : 面试签到
+  S -> DB : 记录面试结果
+  alt 面试通过
+    S -> DB : 状态=观察会员，入会时间=今日
+    S -> N : 发送录取通知与会员证
+  else 面试未通过
+    S -> DB : 状态=已拒绝
+  end
+end
+
+A -> DB : 观察期训练与考核结果写入
+A -> S : 触发转正判定（考核通过）
+S -> DB : 状态=正式会员
+S -> N : 通知转正
+@enduml

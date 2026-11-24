@@ -1,0 +1,46 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+hide empty methods
+package "会员与协会管理" {
+  class "会员" as Member {
+    +学号 : string
+    +姓名 : string
+    +专业 : string
+    +年级 : int
+    +类型 : enum
+    +状态 : enum
+    +入会时间 : date
+  }
+  class "部门" as Dept {
+    +名称 : string
+    +类型 : enum
+  }
+  class "考核记录" as Assess {
+    +学期 : string
+    +结果 : enum
+    +是否观察名单 : bool
+  }
+  class "奖惩记录" as Award {
+    +类型 : enum
+    +事由 : string
+    +时间 : date
+    +综测加分 : decimal
+  }
+  class "权限点" as Perm {
+    +编码 : string
+    +说明 : string
+  }
+}
+Member "1" -- "0..1" Dept : 所属 >
+Member "1" -- "0..*" Assess
+Member "1" -- "0..*" Award
+Member "0..*" -- "0..*" Perm : 授权
+@enduml

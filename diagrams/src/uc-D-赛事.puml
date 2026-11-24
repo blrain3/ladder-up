@@ -1,0 +1,46 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+}
+left to right direction
+actor "赛事策划人\n(教练/会长)" as P
+actor "队长" as CAP
+actor "命题人" as SET
+actor "指导教师" as T
+
+rectangle "赛事管理（校赛 / 非 XCPC / XCPC）" {
+  usecase "赛事策划\nFR-D-01" as U1
+  usecase "报名管理\nFR-D-02" as U2
+  usecase "命题管理\nFR-D-03" as U3
+  usecase "比赛执行\nFR-D-04" as U4
+  usecase "通用成绩管理\nFR-D-05" as U5
+  usecase "赛事总结\nFR-D-06" as U6
+  usecase "网络预选赛\nFR-D-09" as U9
+  usecase "正赛资格确定\nFR-D-10" as U10
+  usecase "赛站分配\nFR-D-11" as U11
+  usecase "参赛准备\nFR-D-12" as U12
+  usecase "竞赛档案\nFR-D-14" as U14
+  usecase "赛事信息库\nFR-D-15" as U15
+}
+
+P --> U1
+P --> U4
+P --> U5
+P --> U6
+P --> U15
+CAP --> U2
+CAP --> U12
+SET --> U3
+T --> U9
+T --> U10
+T --> U11
+T --> U14
+U9 ..> U10 : 成绩作为依据
+U10 ..> U11 : 名额与排名
+U4 ..> U5 : 排名与成绩
+@enduml

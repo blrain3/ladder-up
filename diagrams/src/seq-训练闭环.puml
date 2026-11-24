@@ -1,0 +1,35 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 170
+skinparam shadowing false
+autonumber
+actor "部长" as MIN
+actor "会员" as M
+participant "训练服务" as S
+database "题目与训练库" as DB
+participant "外部OJ适配" as OJ
+participant "定时任务" as CRON
+
+MIN -> S : 创建训练计划（学期、目标、阶段）
+S -> DB : 写入计划与阶段
+MIN -> S : 组装题目包并下发周任务
+S -> OJ : 拉取题目元数据与历史提交（可选）
+OJ --> S : 题目与提交记录
+S -> DB : 写入任务（题目集合、截止时间、对象）
+
+M -> S : 打卡（时长、完成题目）
+S -> DB : 写入打卡记录
+M -> S : 提交外部 OJ 账号绑定
+S -> OJ : 同步提交记录
+OJ --> S : 提交列表
+S -> DB : 去重后补写完成情况
+
+CRON -> S : 每日巡检
+S -> DB : 查询未打卡与进度落后
+S --> M : 打卡提醒 / 落后预警
+
+MIN -> S : 发起周测并录入成绩
+S -> DB : 写测评记录
+S -> DB : 更新能力评估（知识点掌握度）
+S --> MIN : 进度与能力变化视图
+@enduml

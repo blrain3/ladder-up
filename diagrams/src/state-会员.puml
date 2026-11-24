@@ -1,0 +1,25 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+[*] --> 报名中 : 提交入会申请
+报名中 --> 待审核 : 材料齐全
+报名中 --> [*] : 撤回申请
+待审核 --> 观察会员 : 面试通过
+待审核 --> [*] : 未通过
+观察会员 --> 正式会员 : 转正考核通过
+观察会员 --> [*] : 考核未通过退出
+正式会员 --> 竞赛实验室成员 : 选拔进入实验室
+竞赛实验室成员 --> 正式会员 : 退出实验室
+正式会员 --> 已退会 : 自愿退会审批通过
+观察会员 --> 已退会 : 自愿退会
+正式会员 --> 已除名 : 违规处理
+竞赛实验室成员 --> 已除名 : 违规处理
+已退会 --> [*]
+已除名 --> [*]
+@enduml

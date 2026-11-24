@@ -1,0 +1,68 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 200
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FDFDF6
+  BorderColor #666666
+  ArrowColor #666666
+}
+
+class "会员" as Member {
+  +学号 : string
+  +姓名 : string
+  +状态 : enum
+}
+
+hide empty methods
+package "题库与训练管理" {
+  class "知识点" as KP {
+    +名称 : string
+    +难度等级 : enum
+  }
+  class "题目" as Problem {
+    +名称 : string
+    +来源 : string
+    +难度 : enum
+    +题面 : text
+    +外部OJ标识 : string
+  }
+  class "题解" as Solution {
+    +作者 : string
+    +正文 : text
+  }
+  class "训练计划" as Plan {
+    +学期 : string
+    +目标 : string
+    +强度 : enum
+  }
+  class "训练阶段" as Phase {
+    +名称 : enum
+    +起止 : date
+  }
+  class "训练任务" as Task {
+    +截止时间 : datetime
+    +下发对象 : string
+  }
+  class "打卡记录" as Checkin {
+    +日期 : date
+    +时长 : int
+    +完成情况 : enum
+  }
+  class "测评" as Contest {
+    +类型 : enum
+    +成绩 : decimal
+  }
+}
+KP "1" -- "0..*" Problem : 标注
+Problem "1" -- "0..*" Solution
+Plan "1" -- "1..*" Phase
+Phase "1" -- "0..*" Task
+Task "1" -- "0..*" Problem : 组包
+Task "1" -- "0..*" Checkin
+Checkin "0..*" -- "1" Member : 归属
+Contest "0..*" -- "1" Member
+Contest ..> Checkin : 依据打卡与题目
+
+@enduml

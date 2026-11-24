@@ -1,0 +1,35 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 170
+skinparam shadowing false
+autonumber
+actor "队长" as CAP
+actor "教练" as CO
+participant "组队服务" as T
+participant "赛事服务" as C
+database "赛事库" as DB
+participant "报名平台" as EXT
+
+CAP -> T : 申请组队，选择目标赛事
+T -> DB : 校验队员资格与在校状态
+T --> CAP : 队伍组建完成
+
+CAP -> C : 提交赛事报名
+C -> DB : 校验名额与资格
+C -> EXT : 向外部平台报名（非 XCPC 赛事）
+EXT --> C : 报名结果
+C -> DB : 写报名记录（状态）
+
+CO -> C : 发起网络预选赛
+C -> DB : 排名计算
+CO -> C : 依据预选赛成绩与集训表现确定资格
+C -> DB : 更新队伍资格
+
+CO -> C : 分配赛站
+C -> DB : 校验名额，写赛站分配
+CAP -> C : 提交参赛准备材料（交通、住宿、签证）
+C -> DB : 参赛准备记录
+
+C -> DB : 比赛结束写入成绩与名次
+C -> DB : 归档至竞赛档案与赛事信息库
+@enduml

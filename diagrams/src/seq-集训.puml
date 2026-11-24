@@ -1,0 +1,36 @@
+@startuml
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam dpi 170
+skinparam shadowing false
+autonumber
+actor "集训负责人" as L
+actor "队员" as M
+actor "队长" as CAP
+participant "集训服务" as S
+database "集训库" as DB
+participant "多校赛平台" as PL
+
+L -> S : 创建集训（时段、起止、日程）
+S -> DB : 写集训与日程
+L -> S : 导入名单并分组
+S -> DB : 写集训人员（校验会员状态）
+CAP -> S : 组队并任命队长
+S -> DB : 写集训队伍
+
+loop 每日
+  S -> DB : 发布当日任务
+  M -> S : 签到 / 请假
+  S -> DB : 记考勤
+  S -> DB : 统计出勤率，异常预警
+end
+
+CAP -> S : 报名多校赛
+S -> PL : 提交报名
+PL --> S : 确认与赛程
+M -> S : 录入多校赛成绩
+S -> DB : 多校赛成绩记录
+
+L -> S : 生成集训总结
+S -> DB : 汇总考勤、成绩、进步分析
+S --> L : 总结报告（归档）
+@enduml
