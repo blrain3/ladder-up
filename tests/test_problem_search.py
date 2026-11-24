@@ -137,7 +137,7 @@ def test_pagination_preserves_all_filters(client, library):
         headers={"Accept": "text/html"},
     )
     assert response.status_code == 200
-    href = unescape(match(r'<a href="([^"]+)">上一页</a>', response.text)[1])
+    href = unescape(match(r'<a[^>]*href="([^"]+)">上一页</a>', response.text)[1])
     assert parse_qs(urlsplit(href).query) == {
         "kp": [str(library["graph"])], "difficulty": ["入门"], "type": ["程序"],
         "source": ["自建"], "keyword": ["最短路"], "page": ["1"], "size": ["1"],

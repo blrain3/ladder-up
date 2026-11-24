@@ -2,6 +2,22 @@
 
 格式参考 Keep a Changelog，版本遵循语义化版本（设计阶段用 0.x）。
 
+## [0.10.0] - 2026-11-24
+
+### 变更（前端样式统一，关闭 issue #1）
+
+- Bootstrap 3.2.0 → **5.3.3**（本地托管），新增 Bootstrap Icons 1.11.3（字体本地，CSS url 指向 `/static`）
+- 28 个模板全量迁移：导航（含移动端折叠）、卡片、表格（`table-responsive`）、状态徽章、表单标签
+- 危险操作二次确认（删除知识点/照片/题目、除名、下发任务），`app.js` 以 `event.submitter` 取提示
+- 无障碍：表格 `caption`、逐题 `fieldset/legend`、进度条 `aria-valuenow`、图标 `aria-hidden`
+- 打印样式与进度样式移入 `app.css`，移除内联脚本与内联样式
+- 补 MIT 许可全文（Bootstrap / Bootstrap Icons / Popper 说明）
+
+### 修复（前端评审 4 条 + 建议 3 组）
+
+普通会员「奖惩」入口误隐藏、两处必败烟测断言（会员证学号、题面 XSS 容器）、确认框误触发、
+许可全文缺失；补 ADR 0004、工程规范「前端约定」、README 技术栈
+
 ## [0.9.0] - 2026-11-24
 
 ### 新增（S6 奖惩、档案与统计）

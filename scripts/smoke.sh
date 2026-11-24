@@ -169,7 +169,17 @@ expect_http 200 -b "$work/member2.jar" "$url/me"
 [[ $(json_field data member_status) == 观察会员 ]]
 member_csrf=$(json_field data csrf_token)
 expect_http 200 -b "$work/member2.jar" "$url/members/$member_id/card"
-grep -Fq "<dd>$student_no</dd>" "$work/body.json"
+"$python" - "$work/body.json" "$student_no" <<'PYCARD'
+import re
+import sys
+from pathlib import Path
+
+html = Path(sys.argv[1]).read_text(encoding="utf-8")
+details = re.search(r'<dl\b[^>]*\bid="member-card-details"[^>]*>(.*?)</dl>', html, re.S)
+assert details, "会员证缺少信息容器"
+student_no = re.search(r"<dt\b[^>]*>学号</dt>\s*<dd\b[^>]*>([^<]*)</dd>", details[1])
+assert student_no and student_no[1].strip() == sys.argv[2], "会员证学号不匹配"
+PYCARD
 
 "$python" - "$work/photo.png" <<'PYPNG'
 from base64 import b64decode
@@ -221,7 +231,7 @@ expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
     --data-urlencode "problem_type=程序" --data-urlencode "source=自建" \
     --data-urlencode "kp_ids=$child_id" \
     --data-urlencode "sample_in=1 2" --data-urlencode "sample_out=3" \
-    --data-urlencode "statement=<script>alert(1)</script> <img src=x onerror=alert(1)>" "$url/problems"
+    --data-urlencode "statement=<script>alert(1)</script> <img src=x onerror=alert(1)> [x](javascript:alert(1))" "$url/problems"
 problem_id=$(json_field data id)
 
 expect_http 200 -b "$work/coach.jar" "$url/problems?kp=$parent_id"
@@ -234,16 +244,28 @@ assert data["data"]["items"][0]["id"] == int(sys.argv[2]), data
 PYPROB
 
 expect_http 200 -b "$work/coach.jar" -H 'Accept: text/html' "$url/problems/$problem_id"
-grep -Fq '&lt;script&gt;' "$work/body.json"
-if grep -Fq '<script' "$work/body.json"; then
-    printf 'Smoke FAIL: statement script tag was not escaped\n' >&2
-    exit 1
-fi
-grep -Fq '&lt;img src=x onerror=alert(1)&gt;' "$work/body.json"
-if grep -Fq '<img src=x onerror=' "$work/body.json"; then
-    printf 'Smoke FAIL: onerror attribute was not escaped\n' >&2
-    exit 1
-fi
+"$python" - "$work/body.json" <<'PYXSS'
+import re
+import sys
+from html.parser import HTMLParser
+from pathlib import Path
+
+
+class StatementParser(HTMLParser):
+    def handle_starttag(self, tag, attrs):
+        assert not tag.startswith("script"), "题面含未转义的 script 标签"
+        for name, value in attrs:
+            assert name != "onerror", "题面含 onerror 属性"
+            assert "javascript:" not in (value or "").lower(), "题面含 javascript: 属性值"
+
+
+html = Path(sys.argv[1]).read_text(encoding="utf-8")
+statement = re.search(r'<article\b[^>]*\bid="problem-statement"[^>]*>(.*?)</article>', html, re.S)
+assert statement, "缺少题面容器"
+assert "&lt;script&gt;" in statement[1]
+assert "&lt;img src=x onerror=alert(1)&gt;" in statement[1]
+StatementParser().feed(statement[1])
+PYXSS
 
 expect_http 200 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
     --data-urlencode 'content_md=**题解** [x](javascript:alert(1))' \

@@ -7,8 +7,8 @@
   · 学期：{{ stats.term }}</p>
 
 <section id="summary">
-  <h2>总览</h2>
-  <dl class="dl-horizontal">
+  <h2><i class="bi bi-bar-chart" aria-hidden="true"></i> 总览</h2>
+  <dl>
     <dt>在册人数</dt><dd>{{ stats.active }}</dd>
     <dt>本学期新增会员</dt><dd>{{ stats.new_this_term }}</dd>
     <dt>本学期退会/除名</dt><dd>{{ stats.left_this_term }}</dd>
@@ -18,14 +18,17 @@
 {% macro distribution(title, rows) %}
 <section>
   <h2>{{ title }}分布</h2>
-  <table class="table">
-    <thead><tr><th>{{ title }}</th><th>人数</th></tr></thead>
-    <tbody>
-      {% for row in rows %}
-      <tr><td>{{ row.value or '—' }}</td><td>{{ row.count }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">{{ title }}分布</caption>
+      <thead><tr><th>{{ title }}</th><th>人数</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr><td>{{ row.value or '—' }}</td><td>{{ row.count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 {% endmacro %}
 
@@ -35,13 +38,16 @@
 {{ distribution('会员类型', stats.distributions.member_type) }}
 <section>
   <h2>部门 × 会员类型</h2>
-  <table class="table">
-    <thead><tr><th>部门</th><th>会员类型</th><th>人数</th></tr></thead>
-    <tbody>
-      {% for row in stats.distributions.department_member_type %}
-      <tr><td>{{ row.department }}</td><td>{{ row.member_type }}</td><td>{{ row.count }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">部门与会员类型交叉统计</caption>
+      <thead><tr><th>部门</th><th>会员类型</th><th>人数</th></tr></thead>
+      <tbody>
+        {% for row in stats.distributions.department_member_type %}
+        <tr><td>{{ row.department }}</td><td>{{ row.member_type }}</td><td>{{ row.count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 {% endblock %}

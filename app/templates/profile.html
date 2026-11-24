@@ -1,59 +1,65 @@
 {% extends "base.html" %}
 {% block title %}{{ profile.name }} 档案{% endblock %}
 {% block content %}
-<a href="/members">返回会员列表</a>
+<a href="/members"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回会员列表</a>
 <h1>{{ profile.name }} 的会员档案</h1>
 
 <section id="basic">
   <h2>基本信息</h2>
-  <dl class="dl-horizontal">
-    <dt>学号</dt><dd>{{ profile.student_no }}</dd>
-    <dt>部门</dt><dd>{{ profile.department or '—' }}</dd>
-    <dt>专业</dt><dd>{{ profile.major or '—' }}</dd>
-    <dt>入学年份</dt><dd>{{ profile.grade or '—' }}</dd>
-    <dt>会员类型</dt><dd>{{ profile.member_type }}</dd>
-    <dt>会员状态</dt><dd>{{ profile.member_status }}</dd>
-    <dt>入会日期</dt><dd>{{ profile.joined_on or '—' }}</dd>
-    <dt>离会日期</dt><dd>{{ profile.left_on or '—' }}</dd>
-    <dt>邮箱</dt><dd>{{ profile.email | default('—', true) }}</dd>
-    <dt>手机</dt><dd>{{ profile.phone | default('—', true) }}</dd>
+  <dl class="row">
+    <dt class="col-sm-3">学号</dt><dd class="col-sm-9">{{ profile.student_no }}</dd>
+    <dt class="col-sm-3">部门</dt><dd class="col-sm-9">{{ profile.department or '—' }}</dd>
+    <dt class="col-sm-3">专业</dt><dd class="col-sm-9">{{ profile.major or '—' }}</dd>
+    <dt class="col-sm-3">入学年份</dt><dd class="col-sm-9">{{ profile.grade or '—' }}</dd>
+    <dt class="col-sm-3">会员类型</dt><dd class="col-sm-9">{{ profile.member_type }}</dd>
+    <dt class="col-sm-3">会员状态</dt><dd class="col-sm-9">{{ status_badge(profile.member_status) }}</dd>
+    <dt class="col-sm-3">入会日期</dt><dd class="col-sm-9">{{ profile.joined_on or '—' }}</dd>
+    <dt class="col-sm-3">离会日期</dt><dd class="col-sm-9">{{ profile.left_on or '—' }}</dd>
+    <dt class="col-sm-3">邮箱</dt><dd class="col-sm-9">{{ profile.email | default('—', true) }}</dd>
+    <dt class="col-sm-3">手机</dt><dd class="col-sm-9">{{ profile.phone | default('—', true) }}</dd>
   </dl>
-  <p><a class="btn btn-default" href="/members/{{ profile.id }}/export?format=csv">导出 CSV</a></p>
+  <p><a class="btn btn-outline-secondary" href="/members/{{ profile.id }}/export?format=csv"><i class="bi bi-download" aria-hidden="true"></i> 导出 CSV</a></p>
 </section>
 
 <section id="training">
   <h2>训练</h2>
-  <table class="table">
-    <thead><tr><th>任务</th><th>完成率</th><th>打卡次数</th><th>最后打卡日期</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>{{ profile.training.task_count }}</td>
-        <td>{{ profile.training.rate_text }}</td>
-        <td>{{ profile.training.checkin_count }}</td>
-        <td>{{ profile.training.last_date or '无记录' }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">训练记录</caption>
+      <thead><tr><th>任务</th><th>完成率</th><th>打卡次数</th><th>最后打卡日期</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>{{ profile.training.task_count }}</td>
+          <td>{{ profile.training.rate_text }}</td>
+          <td>{{ profile.training.checkin_count }}</td>
+          <td>{{ profile.training.last_date or '无记录' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section id="assessment">
   <h2>考核</h2>
   {% if profile.assessments %}
-  <table class="table">
-    <thead><tr><th>学期</th><th>结果</th><th>考核时间</th><th>备注</th></tr></thead>
-    <tbody>
-      {% for row in profile.assessments %}
-      <tr>
-        <td>{{ row.term }}</td>
-        <td>{{ row.result }}</td>
-        <td>{{ row.assessed_at }}</td>
-        <td>{{ row.remark or '—' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">考核记录</caption>
+      <thead><tr><th>学期</th><th>结果</th><th>考核时间</th><th>备注</th></tr></thead>
+      <tbody>
+        {% for row in profile.assessments %}
+        <tr>
+          <td>{{ row.term }}</td>
+          <td>{{ status_badge(row.result) }}</td>
+          <td>{{ row.assessed_at }}</td>
+          <td>{{ row.remark or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="text-muted">无记录</p>
+  <p class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录</p>
   {% endif %}
   {{ pagination_links(profile.assessment_pagination, "考核分页") }}
 </section>
@@ -62,31 +68,37 @@
   <h2>奖惩</h2>
   <p>汇总分值：<strong>{{ profile.award_summary_points }}</strong> 分（整数百分位合计 {{ profile.award_summary }}）</p>
   {% if profile.awards %}
-  <table class="table">
-    <thead><tr><th>日期</th><th>类型</th><th>标题</th><th>分值(分)</th><th>事由</th></tr></thead>
-    <tbody>
-      {% for row in profile.awards %}
-      <tr>
-        <td>{{ row.happened_on }}</td>
-        <td>{{ row.award_type }}</td>
-        <td>{{ row.title }}</td>
-        <td>{{ row.points or "—" }}</td>
-        <td>{{ row.reason | default('—', true) }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">奖惩记录</caption>
+      <thead><tr><th>日期</th><th>类型</th><th>标题</th><th>分值(分)</th><th>事由</th></tr></thead>
+      <tbody>
+        {% for row in profile.awards %}
+        <tr>
+          <td>{{ row.happened_on }}</td>
+          <td>{{ row.award_type }}</td>
+          <td>{{ row.title }}</td>
+          <td>{{ row.points or "—" }}</td>
+          <td>{{ row.reason | default('—', true) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="text-muted">无记录</p>
+  <p class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录</p>
   {% endif %}
   {{ pagination_links(profile.award_pagination, "奖惩分页") }}
 </section>
 
 <section id="contest">
   <h2>赛事</h2>
-  <table class="table">
-    <thead><tr><th>日期</th><th>赛事</th><th>队伍</th><th>名次</th><th>奖项</th></tr></thead>
-    <tbody><tr><td colspan="5" class="text-muted">无记录（赛事模块随 D 域交付）</td></tr></tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <caption class="visually-hidden">赛事记录</caption>
+      <thead><tr><th>日期</th><th>赛事</th><th>队伍</th><th>名次</th><th>奖项</th></tr></thead>
+      <tbody><tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录（赛事模块随 D 域交付）</td></tr></tbody>
+    </table>
+  </div>
 </section>
 {% endblock %}

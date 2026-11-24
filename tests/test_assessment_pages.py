@@ -42,7 +42,11 @@ def test_assessments_page_contains_result_row(assessment_api):
     api["record"](api["create_test"](), [{"member_id": member_id, "score": 75}])
     api["run_assess"]()
     html = assert_html(api["client"].get("/assessments?term=2026-2027-1", headers={"Accept": "text/html"}))
-    assert re.search(r"<td>2026-2027-1</td>\s*<td>student01</td>\s*<td>[^<]+</td>\s*<td>通过</td>", html)
+    assert re.search(
+        r"<td>2026-2027-1</td>\s*<td>student01</td>\s*<td>[^<]+</td>\s*"
+        r"<td>\s*<span[^>]*><i[^>]*></i>通过</span>\s*</td>",
+        html, re.S,
+    )
     assert "最近任务运行" in html
 
 

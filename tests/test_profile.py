@@ -1,3 +1,5 @@
+import re
+
 from app.db import SessionLocal
 from app.models import Member, MemberAssessment, MemberAward
 from app.models.base import local_time
@@ -39,7 +41,10 @@ def test_profile_training_matches_s4_when_two_tasks_share_a_problem(client, acco
     assert "无记录（赛事模块随 D 域交付）" in html
     assert "1.50" in html and "优秀会员" in html
     assert "<td>100.00%</td>" in html
-    assert "<td>2026-2027-1</td>" in html and "<td>通过</td>" in html
+    assert re.search(
+        r'<td>2026-2027-1</td>\s*<td><span class="badge [^"]+"><i[^>]*></i>通过</span></td>',
+        html,
+    )
     s4 = client.get("/training-progress").json()["data"]["items"][0]
     profile = client.get(f"/members/{member_id}/profile").json()["data"]["training"]
     assert (profile["solved"], profile["total"], profile["rate"]) == (s4["solved"], s4["total"], s4["rate"])

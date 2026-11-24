@@ -128,11 +128,11 @@ def test_root_leaf_delete_succeeds(client, admin, engine):
 
 def test_knowledge_points_render_html(client, admin):
     csrf = login_admin(client, admin)
-    create_kp(client, csrf, "多项式")
+    node = create_kp(client, csrf, "多项式")
     response = client.get("/knowledge-points", headers={"Accept": "text/html"})
     assert response.status_code == 200
     assert "多项式" in response.text
-    assert ">删除</button>" in response.text
+    assert f'action="/knowledge-points/{node["id"]}/delete"' in response.text
     assert "<td>入门</td>" in response.text
 
 

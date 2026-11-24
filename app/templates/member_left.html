@@ -2,6 +2,9 @@
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <h1>{{ title }}</h1>
-<div class="alert alert-warning" role="alert">{{ message }}</div>
-<p><a class="btn btn-default" href="/login">重新登录</a></p>
+<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+  <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+  <div>{{ message }}</div>
+</div>
+<p><a class="btn btn-outline-secondary" href="/login"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 重新登录</a></p>
 {% endblock %}

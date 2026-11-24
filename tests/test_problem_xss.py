@@ -1,3 +1,6 @@
+import re
+from html.parser import HTMLParser
+
 import pytest
 
 
@@ -7,7 +10,7 @@ def problem_with_xss(client, signed_in, coach):
     root = client.post(
         "/knowledge-points", json={"name": "安全"}, headers={"X-CSRF-Token": csrf}
     ).json()["data"]
-    statement = "<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>"
+    statement = "<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n[x](javascript:alert(1))"
     created = client.post(
         "/problems",
         json={
@@ -25,10 +28,19 @@ def test_statement_script_and_img_are_escaped(client, problem_with_xss):
     _csrf, problem_id = problem_with_xss
     page = client.get(f"/problems/{problem_id}", headers={"Accept": "text/html"})
     assert page.status_code == 200
-    assert "<script" not in page.text
-    assert "<img src=x onerror=" not in page.text
-    assert "&lt;script&gt;" in page.text
-    assert "&lt;img src=x onerror=alert(1)&gt;" in page.text
+    statement = re.search(r'<article\b[^>]*\bid="problem-statement"[^>]*>(.*?)</article>', page.text, re.S)
+    assert statement
+    assert "&lt;script&gt;" in statement[1]
+    assert "&lt;img src=x onerror=alert(1)&gt;" in statement[1]
+
+    class StatementParser(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            assert not tag.startswith("script")
+            for name, value in attrs:
+                assert name != "onerror"
+                assert "javascript:" not in (value or "").lower()
+
+    StatementParser().feed(statement[1])
 
 
 def test_solution_javascript_link_is_removed(client, problem_with_xss):

@@ -82,9 +82,45 @@ def test_stats_navigation_follows_granted_read_permission(client, accounts, sign
     before = client.get("/members", headers=headers)
     assert 'href="/stats/members"' not in before.text
     assert 'href="/members/export"' not in before.text
-    assert 'href="/awards"' in before.text
+    assert 'href="/awards?scope=mine"' in before.text
     assert client.get("/stats/members").status_code == 403
 
     grant_permission(accounts[0]["student01"], "member:read")
-    assert 'href="/stats/members"' in client.get("/members", headers=headers).text
+    after = client.get("/members", headers=headers).text
+    assert 'href="/stats/members"' in after
+    assert 'href="/awards?scope=mine"' in after
     assert client.get("/stats/members").status_code == 200
+
+
+def test_mine_awards_only_includes_current_member(client, accounts, coach, signed_in, grant_permission):
+    csrf = signed_in(client, "coach0001")
+    for student, title in (("student01", "本人奖励"), ("student02", "他人奖励")):
+        response = client.post(
+            "/awards",
+            json={
+                "member_id": accounts[0][student], "award_type": "奖励", "title": title,
+                "happened_on": "2026-11-20", "extra_points": 150,
+            },
+            headers={"X-CSRF-Token": csrf},
+        )
+        assert response.status_code == 200, response.text
+
+    signed_in(client, "student01")
+    for broad_read in (False, True):
+        if broad_read:
+            grant_permission(accounts[0]["student01"], "member:read")
+        html = client.get("/awards?scope=mine", headers={"Accept": "text/html"})
+        assert html.status_code == 200
+        assert "本人奖励" in html.text
+        assert "他人奖励" not in html.text
+        data = client.get("/awards?scope=mine").json()["data"]
+        assert data["total"] == 1
+        assert [item["student_no"] for item in data["items"]] == ["student01"]
+    assert client.get("/awards").json()["data"]["total"] == 2
+
+    signed_in(client, "coach0001")
+    html = client.get("/awards?scope=mine", headers={"Accept": "text/html"})
+    assert html.status_code == 200
+    assert 'href="/awards"' in html.text
+    assert 'action="/awards"' not in html.text
+    assert "本人奖励" not in html.text and "他人奖励" not in html.text

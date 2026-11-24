@@ -116,11 +116,13 @@ def test_application_list_renders_rows_and_review_action(client, admin, engine):
     login(client, admin["student_no"], admin["password"])
     response = client.get("/admin/applications", headers={"Accept": "text/html"})
     assert response.status_code == 200
-    assert f"<td>{application_id}</td>" in response.text
-    assert f'action="/admin/applications/{application_id}/review"' in response.text
-    assert ">通过</button>" in response.text
-    for value in ("202400000099", "申请人", "待审核"):
-        assert f"<td>{value}</td>" in response.text
+    row = re.search(rf'<tr>\s*<td>{application_id}</td>(.*?)</tr>', response.text, re.S)
+    assert row
+    assert f'action="/admin/applications/{application_id}/review"' in row[1]
+    assert 'value="通过"' in row[1] and 'value="拒绝"' in row[1]
+    for value in ("202400000099", "申请人"):
+        assert f"<td>{value}</td>" in row[1]
+    assert re.search(r'<td><span class="badge [^"]+"><i[^>]*></i>待审核</span></td>', row[1])
 
 
 def test_read_permission_can_list_applications_without_approval_controls(client, signed_in, engine):

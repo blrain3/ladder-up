@@ -5,12 +5,13 @@
   <h1>申请已提交</h1>
   <p>你的入会申请已进入 <strong>待审核</strong> 状态。</p>
   <p>申请编号 <strong>{{ application_no }}</strong></p>
-  <div class="alert alert-info">
-    请保存查询回执码（仅显示一次）<strong id="receipt-code">{{ receipt_code }}</strong>
+  <div class="alert alert-info d-flex align-items-center gap-2">
+    <i class="bi bi-info-circle" aria-hidden="true"></i>
+    <div>请保存查询回执码（仅显示一次）<strong id="receipt-code">{{ receipt_code }}</strong></div>
   </div>
-  <p>
-    <a class="btn btn-primary" href="/apply/status">查询申请进度</a>
-    <a class="btn btn-default" href="/apply">返回申请页</a>
-  </p>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="/apply/status"><i class="bi bi-search" aria-hidden="true"></i> 查询申请进度</a>
+    <a class="btn btn-outline-secondary" href="/apply"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回申请页</a>
+  </div>
 </div></div>
 {% endblock %}
