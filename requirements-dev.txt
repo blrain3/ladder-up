@@ -4,3 +4,5 @@ pytest-cov==7.*
 mypy==2.4.1
 types-Markdown==3.11.3.20261122
 types-passlib==1.7.7.20260211
+playwright==1.65.2
+pytest-playwright==0.10.0

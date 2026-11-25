@@ -17,7 +17,7 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --ignore=tests/e2e"
 
 [tool.mypy]
 python_version = "3.13"

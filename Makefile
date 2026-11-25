@@ -25,7 +25,7 @@ APP_ENV ?= development
 SESSION_TTL_HOURS ?= 8
 export DATABASE_URL APP_ENV SESSION_TTL_HOURS
 
-.PHONY: install migrate seed test lint typecheck cov check smoke backup restore-check run hooks branch
+.PHONY: install migrate seed test lint typecheck cov check smoke e2e backup restore-check run hooks branch
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -39,6 +39,9 @@ seed:
 
 test:
 	$(PYTEST) -q
+
+e2e:
+	$(PYTHON) -m pytest tests/e2e -q
 
 hooks:
 	@mkdir -p .git/hooks && cp scripts/pre-commit-guard.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo "pre-commit 守卫已安装"
