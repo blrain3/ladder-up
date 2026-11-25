@@ -129,6 +129,33 @@ def _score_field(value):
     return number
 
 
+def normalize_kp_snapshot(raw):
+    """A snapshot maps knowledge-point names to correct and total question counts."""
+    if raw is None or raw == "":
+        return {}
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (ValueError, RecursionError) as exc:
+            raise AssessmentError("知识点答题数据格式不正确") from exc
+    if not isinstance(raw, dict) or len(raw) > 100:
+        raise AssessmentError("知识点答题数据须为最多 100 个知识点的对象")
+    for name, counts in raw.items():
+        if not isinstance(name, str) or not name.strip() or len(name) > 100 or not isinstance(counts, dict):
+            raise AssessmentError("知识点名称或答题数格式不正确")
+        correct, total = counts.get("correct"), counts.get("total")
+        if type(correct) is not int or type(total) is not int or not 0 <= correct <= total <= MAX_SOLVED or not total:
+            raise AssessmentError("知识点答对数须介于 0 和总题数之间，总题数须为正整数")
+    return {name: {"correct": counts["correct"], "total": counts["total"]} for name, counts in raw.items()}
+
+
+def parse_kp_snapshot(raw):
+    try:
+        return normalize_kp_snapshot(raw)
+    except AssessmentError:
+        return {}
+
+
 def record_scores(session, test_id, rows, operator_id, scope) -> dict:
     """Apply score changes against the submitted row revisions and audit each write."""
     test = session.get(AssessmentTest, test_id)
@@ -155,10 +182,19 @@ def record_scores(session, test_id, rows, operator_id, scope) -> dict:
         version = row.get("version")
         if str(version) != str(existing.version if existing else 0):
             raise AssessmentError("成绩已变更，请刷新后重试", code=40902, status=409)
+        snapshot = existing.kp_snapshot if existing else None
+        before = {"solved_count": existing.solved_count, "score": existing.score} if existing else None
+        values = {"solved_count": solved, "score": score_text}
+        if "kp_snapshot" in row:
+            parsed = normalize_kp_snapshot(row["kp_snapshot"])
+            snapshot = json.dumps(parsed, ensure_ascii=False, sort_keys=True) if parsed else None
+            values["kp_snapshot"] = snapshot
+            if before is not None:
+                before["kp_snapshot"] = existing.kp_snapshot
         if existing is None:
             score_row = TestScore(
                 test_id=test_id, member_id=member_id, solved_count=solved,
-                score=score_text, kp_snapshot=None,
+                score=score_text, kp_snapshot=snapshot,
             )
             session.add(score_row)
             session.flush()
@@ -166,23 +202,22 @@ def record_scores(session, test_id, rows, operator_id, scope) -> dict:
                 session, "score.created", actor_id=operator_id, target_id=score_row.id,
                 target_type="test_score",
                 after={"test_id": test_id, "member_id": member_id,
-                       "solved_count": solved, "score": score_text},
+                       **values},
             )
             created += 1
         else:
-            before = {"solved_count": existing.solved_count, "score": existing.score}
-            if before == {"solved_count": solved, "score": score_text}:
+            if before == values:
                 continue
             result = session.execute(update(TestScore).where(
                 TestScore.id == existing.id, TestScore.version == int(version),
-            ).values(solved_count=solved, score=score_text, version=TestScore.version + 1))
+            ).values(**values, version=TestScore.version + 1))
             if result.rowcount != 1:
                 raise AssessmentError("成绩已变更，请刷新后重试", code=40902, status=409)
             _write_audit(
                 session, "score.updated", actor_id=operator_id, target_id=existing.id,
                 target_type="test_score", before=before,
                 after={"test_id": test_id, "member_id": member_id,
-                       "solved_count": solved, "score": score_text, "updated": True},
+                       **values, "updated": True},
             )
             updated += 1
     return {"created": created, "updated": updated}

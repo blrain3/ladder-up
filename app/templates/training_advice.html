@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}训练建议{% endblock %}
+{% block content %}
+<h1>训练建议</h1>
+{% include "oj_nav.html" %}
+{% if target.id != member.id %}<p>会员 {{ target.name }}</p>{% endif %}
+{% if advice %}
+<ul class="list-group">
+  {% for item in advice %}
+  {% set basis = item.basis %}
+  <li class="list-group-item">
+    <p class="mb-1">{{ item.text }}</p>
+    <p class="mb-0 text-muted">依据
+      {% if item.rule == 'inactive' %}
+        {{ basis.date_from }} 至 {{ basis.date_to }}，连续 {{ basis.days }} 天无打卡
+      {% elif item.rule == 'completion' %}
+        {{ basis.date_from }} 至 {{ basis.date_to }}，完成 {{ basis.solved }} / {{ basis.total }} 题，阈值 {{ "%.2f"|format(basis.threshold * 100) }}%
+      {% elif item.rule == 'knowledge_point' %}
+        该知识点共答对 {{ basis.correct }} / {{ basis.total }} 题，正确率 {{ "%.2f"|format(basis.rate * 100) }}%，阈值 60%
+      {% endif %}
+    </p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-muted">暂无数据</p>
+{% endif %}
+{% endblock %}

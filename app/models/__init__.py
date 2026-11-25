@@ -6,6 +6,7 @@ from .award import MemberAward
 from .base import Base
 from .knowledge_point import KnowledgePoint
 from .member import Member, MemberApplication
+from .oj import OjAccount, OjSubmission
 from .org import Department, SysConfig
 from .problem import Problem, ProblemKp, ProblemSolution
 from .training import (
@@ -21,7 +22,7 @@ from .training import (
 __all__ = [
     "AssessmentTest", "Attachment", "AuditLog", "Base", "Checkin", "CheckinProblem", "Department", "JobRun",
     "KnowledgePoint", "Member", "MemberApplication", "MemberAssessment", "MemberAward",
-    "MemberPermission", "MemberSession",
+    "MemberPermission", "MemberSession", "OjAccount", "OjSubmission",
     "PermissionPoint", "Problem", "ProblemKp", "ProblemSolution", "SysConfig", "TestScore",
     "TaskAssignee", "TaskProblem", "TrainingPhase", "TrainingPlan", "TrainingTask",
 ]

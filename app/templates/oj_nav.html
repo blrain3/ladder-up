@@ -1,0 +1,10 @@
+<nav class="nav nav-pills mb-3" aria-label="OJ 同步">
+  {% set links = [('/oj/accounts', '绑定账号'), ('/oj/submissions', '提交记录'), ('/training-advice', '训练建议')] %}
+  {% if member.role in ('coach', 'sys_admin') %}
+    {% set links = links + [('/oj/vjudge-import', '导入 Vjudge'), ('/oj/sync', '同步 Codeforces')] %}
+  {% endif %}
+  {% for href, label in links %}
+  <a class="nav-link{% if request.url.path == href %} active{% endif %}"
+     {% if request.url.path == href %}aria-current="page"{% endif %} href="{{ href }}">{{ label }}</a>
+  {% endfor %}
+</nav>

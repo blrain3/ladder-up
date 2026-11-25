@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}导入 Vjudge{% endblock %}
+{% block content %}
+<h1>导入 Vjudge 提交</h1>
+{% include "oj_nav.html" %}
+<form method="post" action="/oj/vjudge-import" enctype="multipart/form-data" class="mb-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label class="form-label" for="vjudge-file">UTF-8 CSV 文件</label>
+  <input class="form-control mb-2" id="vjudge-file" type="file" name="file" accept=".csv,text/csv" aria-describedby="csv-columns" required>
+  <p id="csv-columns">表头为 <code>handle,problem,verdict,submitted_at</code>。</p>
+  <button class="btn btn-primary">导入</button>
+</form>
+{% if report is not none %}
+<p role="status">接受 {{ report.accepted }} 行，拒绝 {{ report.rejected }} 行。新增 {{ report.created }} 条，跳过重复 {{ report.skipped }} 条。</p>
+{% if report.errors %}
+<div class="table-responsive">
+  <table class="table">
+    <caption>错误行（最多显示 20 条）</caption>
+    <thead><tr><th scope="col">行号</th><th scope="col">原因</th></tr></thead>
+    <tbody>
+    {% for error in report.errors %}
+      <tr><td>{{ error.line }}</td><td>{{ error.reason }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% else %}
+<p class="text-muted">暂无数据</p>
+{% endif %}
+{% endblock %}

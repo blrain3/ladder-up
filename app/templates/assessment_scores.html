@@ -4,13 +4,15 @@
 <h1>录分：{{ scores.test.title }}</h1>
 <p>{{ scores.test.test_type }} · {{ scores.test.held_on }}</p>
 
+<p id="kp-format" class="text-muted small">知识点答题明细可选，格式为 <code>{"最短路":{"correct":2,"total":5}}</code>。correct 为答对数，total 为总题数。</p>
+
 <form id="assessment-score-form" method="post" action="/assessment-tests/{{ scores.test.id }}/scores">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="table-responsive">
     <table class="table table-sm table-hover align-middle">
       <caption class="visually-hidden">会员录分</caption>
       <thead>
-        <tr><th>学号</th><th>姓名</th><th>已解出题数</th><th>分数（0–9999.99）</th></tr>
+        <tr><th>学号</th><th>姓名</th><th>已解出题数</th><th>分数（0–9999.99）</th><th>知识点答题明细</th></tr>
       </thead>
       <tbody>
         {% for item in scores["items"] %}
@@ -32,9 +34,16 @@
             <input class="form-control" id="score-{{ item.id }}" name="score_{{ item.id }}" type="number"
                    min="0" max="9999.99" step="0.01" value="{{ item.score or '' }}">
           </td>
+          <td>
+            {% set snapshot = item.kp_snapshot|tojson if item.kp_snapshot else '' %}
+            <input type="hidden" name="old_kp_snapshot_{{ item.id }}" value="{{ snapshot|forceescape }}">
+            <label class="visually-hidden" for="kp-snapshot-{{ item.id }}">{{ item.name }}的知识点答题明细</label>
+            <input class="form-control" id="kp-snapshot-{{ item.id }}" name="kp_snapshot_{{ item.id }}"
+                   aria-describedby="kp-format" value="{{ snapshot|forceescape }}">
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
+        <tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
         {% endfor %}
       </tbody>
     </table>

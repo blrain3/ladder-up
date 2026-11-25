@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}OJ 账号{% endblock %}
+{% block content %}
+<h1>OJ 账号</h1>
+{% include "oj_nav.html" %}
+{% if target.id == member.id %}
+<form method="post" action="/oj/accounts" class="row g-2 align-items-end mb-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="col-auto">
+    <label class="form-label" for="account-platform">平台</label>
+    <select class="form-select" name="platform" id="account-platform">
+      <option value="codeforces">Codeforces</option>
+      <option value="vjudge">Vjudge</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label" for="account-handle">账号</label>
+    <input class="form-control" id="account-handle" name="handle" maxlength="80" required>
+  </div>
+  <div class="col-auto"><button class="btn btn-primary">绑定</button></div>
+</form>
+{% else %}
+<p>会员 {{ target.name }}</p>
+{% endif %}
+<div class="table-responsive">
+  <table class="table align-middle">
+    <thead><tr><th scope="col">平台</th><th scope="col">账号</th><th scope="col">绑定时间</th>
+      {% if target.id == member.id %}<th scope="col">操作</th>{% endif %}
+    </tr></thead>
+    <tbody>
+    {% for account in accounts %}
+      <tr><td>{{ account.platform }}</td><td>{{ account.handle }}</td><td>{{ account.created_at }}</td>
+        {% if target.id == member.id %}
+        <td>
+          <form method="post" action="/oj/accounts/unbind">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="platform" value="{{ account.platform }}">
+            <input type="hidden" name="account_id" value="{{ account.id }}">
+            <button class="btn btn-sm btn-outline-danger" aria-label="解绑 {{ account.handle }}">解绑</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ 4 if target.id == member.id else 3 }}" class="text-muted">暂无数据</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
