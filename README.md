@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](app/main.py)
-[![Version](https://img.shields.io/badge/version-0.10.0-informational)](#当前进度)
+[![Version](https://img.shields.io/badge/version-0.11.0-informational)](#当前进度)
 [![Docs](https://img.shields.io/badge/docs-15%20份%20%2F%20138%20页-informational)](docs/)
 [![Diagrams](https://img.shields.io/badge/uml-18%20张-informational)](diagrams/)
 
@@ -70,7 +70,7 @@ flowchart LR
 
 ## 当前进度
 
-版本 **0.10.0**（2026-11-24）。一期六个切片已全部完成，只剩二期的 OJ 同步：
+版本 **0.11.0**（2026-11-25）。一期七个切片已全部完成，23 项功能全部有可运行实现：
 
 - [x] S1 骨架与认证
 - [x] S2 入会
@@ -78,9 +78,9 @@ flowchart LR
 - [x] S4 训练
 - [x] S5 考核与转正
 - [x] S6 档案与统计
-- [ ] S7 OJ 同步（P2，12/13–12/14）
+- [x] S7 OJ 同步与训练建议
 
-设计定稿前经过五轮开工前评审，评分 69 → 76 → 80 → 85 → 89，评审记录在 [`docs/review/`](docs/review/)。
+设计定稿前经过五轮开工前评审，评分 69 → 76 → 80 → 85 → 89；`docs/review/` 只保留末轮放行结论，前四轮在 git 历史里。各切片的代码评审结论同样在 [`docs/review/`](docs/review/)。
 
 ## 快速开始
 
@@ -118,29 +118,33 @@ Python 3.11 + FastAPI + SQLAlchemy 2.0 + SQLite（WAL）+ Jinja2 + Bootstrap 5.3
 ## 文档
 
 <details>
-<summary><b>文档（15 份 / 138 页，点击展开）</b></summary>
+<summary><b>文档（20 份 / 158 页，点击展开）</b></summary>
 
 | 文件 | 页 | 内容 |
 |---|---|---|
 | [`docs/需求基线-v1.2.md`](docs/需求基线-v1.2.md) | 16 | 6 个域、9 个参与者、54 个功能、20 个实体、4 个状态机、5 条关键流程；第 10 节 10 项决策全部定稿 |
 | [`docs/设计说明书-v1.0.md`](docs/设计说明书-v1.0.md) | 15 | 分层架构、模块划分、技术选型对比、8 条关键设计决策、权限矩阵、非功能设计、部署与演进 |
 | [`docs/数据库设计-v1.0.md`](docs/数据库设计-v1.0.md) | 22 | 38 张表清单（一期 27 / 二期 11）+ 27 张完整 DDL、SQLite 方言映射、索引与约束理由、枚举字典、功能到表的映射 |
-| [`docs/接口设计-v1.0.md`](docs/接口设计-v1.0.md) | 12 | 通用约定、错误码表、约 90 个 REST 接口、4 个关键接口示例、外部集成约束 |
+| [`docs/接口设计-v1.0.md`](docs/接口设计-v1.0.md) | 15 | 通用约定、错误码表、约 90 个 REST 接口、4 个关键接口示例、外部集成约束 |
 | [`docs/测试计划-v1.0.md`](docs/测试计划-v1.0.md) | 22 | 四层测试策略、54 条功能的覆盖矩阵、12 条详细场景用例、缺陷管理 |
 | [`docs/项目计划-v1.0.md`](docs/项目计划-v1.0.md) | 14 | 真实日期的 4 周里程碑、7 个纵向切片、按 AI 协作模式的工时口径、质量门槛 |
-| [`docs/开发路线-v1.0.md`](docs/开发路线-v1.0.md) | 5 | 切片级执行清单：交付文件、验收命令、协作方式、交付周动作 |
-| [`docs/review/gpt-review-v1.0.md`](docs/review/gpt-review-v1.0.md) | 8 | 开工前技术评审：技术栈复核、开发线路意见、7 处文档矛盾、69/100 |
-| [`docs/review/gpt-review-v1.1.md`](docs/review/gpt-review-v1.1.md) | 7 | 第二轮复核：闭环核对、交叉一致性、3 项开工阻塞、76/100 |
-| [`docs/review/gpt-review-v1.2.md`](docs/review/gpt-review-v1.2.md) | 6 | 第三轮放行核对：三项阻塞判定、残留抽查、80/100 |
-| [`docs/review/gpt-review-v1.3.md`](docs/review/gpt-review-v1.3.md) | 2 | 第四轮核对：三项阻塞逐条判定、五处措辞级冲突、85/100 |
-| [`docs/review/gpt-review-v1.4.md`](docs/review/gpt-review-v1.4.md) | 3 | 第五轮核对：五项冲突三项消除、三处未消除、89/100 |
+| [`docs/开发路线-v1.0.md`](docs/开发路线-v1.0.md) | 6 | 切片级执行清单：交付文件、验收命令、协作方式、各切片实际结果、交付周动作 |
+| [`docs/验收矩阵-v1.0.md`](docs/验收矩阵-v1.0.md) | 10 | 23 项功能逐项判定（12 通过 / 11 部分实现 / 0 未实现），用例数取自实测；含非功能项与「尚未验证」清单 |
+| [`docs/演练记录-备份恢复-v1.0.md`](docs/演练记录-备份恢复-v1.0.md) | 5 | 真实执行的备份→破坏→恢复→校验：146 行 / 27 表 / 2 附件，备份 0.84 s、恢复 8 ms、行数与附件指纹全一致 |
+| [`docs/review/gpt-review-v1.4.md`](docs/review/gpt-review-v1.4.md) | 3 | 开工前五轮技术评审的末轮放行结论（前四轮见 git 历史） |
+| [`docs/review/s2-code-review.md`](docs/review/s2-code-review.md) | 4 | S2 代码评审：必须修 10 条 |
+| [`docs/review/s3-code-review.md`](docs/review/s3-code-review.md) | 3 | S3 代码评审：必须修 10 条 |
+| [`docs/review/s4-code-review.md`](docs/review/s4-code-review.md) | 3 | S4 代码评审：必须修 9 条 |
+| [`docs/review/s5-code-review.md`](docs/review/s5-code-review.md) | 3 | S5 代码评审：必须修 7 条 |
+| [`docs/review/s6-code-review.md`](docs/review/s6-code-review.md) | 4 | S6 代码评审：必须修 8 条 |
+| [`docs/review/s7-code-review.md`](docs/review/s7-code-review.md) | 3 | S7 代码评审：必须修 8 条 |
+| [`docs/review/ui-bootstrap5-review.md`](docs/review/ui-bootstrap5-review.md) | 3 | 前端统一改造评审 |
 | [`docs/图目录.md`](docs/图目录.md) | 3 | 18 张图的编号与用途 |
-| [`docs/工程规范.md`](docs/工程规范.md) | 2 | 目录、命名、提交信息、分支、文档与图的管理约定 |
+| [`docs/工程规范.md`](docs/工程规范.md) | 3 | 目录、命名、提交信息、分支、文档与图的管理约定、工具与门禁 |
 | [`docs/来源说明.md`](docs/来源说明.md) | 1 | 需求来源、与原始材料的关系、名称与商标说明 |
-| [`docs/adr/`](docs/adr/) | — | 0001 需求基线先于 UML 设计、0002 技术选型与待确认项、0003 会话认证与运行契约 |
+| [`docs/adr/`](docs/adr/) | — | 0001 需求基线先于 UML 设计、0002 技术选型与待确认项、0003 会话认证与运行契约、0004 前端样式与组件库 |
 
-页数为 `make docs` 生成的 PDF 实测值，源文件是 Markdown。
-
+页数为 `make docs` 生成的 PDF 实测值，源文件是 Markdown。ADR 为多文件目录，不单独出 PDF。
 </details>
 
 <details>
@@ -163,12 +167,13 @@ Python 3.11 + FastAPI + SQLAlchemy 2.0 + SQLite（WAL）+ Jinja2 + Bootstrap 5.3
 app/             FastAPI 应用（路由、认证、业务模块、模板、静态资源）
 alembic/         数据库迁移
 assets/          README 配图（海报横幅）
-bin/             seed 与 demo-seed 脚本
-deploy/          部署相关
+bin/             seed、定时作业、备份与恢复校验
+deploy/          systemd unit / timer、容器相关文件
 diagrams/        PlantUML 图源（src/）与 PNG
-docs/            需求基线、设计、数据库、接口、测试、项目计划
+docs/            需求基线、设计、数据库、接口、测试、计划、验收矩阵、演练记录
 docs/adr/        架构决策记录
-scripts/         出图、文档转换、烟测
+docs/review/     各切片代码评审结论
+scripts/         出图、文档转换、烟测与切片探针
 tests/           测试
 ```
 
