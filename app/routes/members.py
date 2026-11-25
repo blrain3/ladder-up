@@ -281,9 +281,11 @@ def delete_photo(request: Request, id: int = Depends(object_id),
     actor_id = member.id
     session.rollback()
     session.execute(text("BEGIN IMMEDIATE"))
-    member = session.get(Member, actor_id)
-    if not active_member(member) or not load_session(request.cookies["sid"], session=session):
+    refreshed_member = session.get(Member, actor_id)
+    if (refreshed_member is None or not active_member(refreshed_member)
+            or not load_session(request.cookies["sid"], session=session)):
         raise unauthorized()
+    member = refreshed_member
     target = photo_write_target(request, session, member, id)
     if target.photo_attachment_id is None:
         raise HTTPException(400, {"code": 40002, "message": "该会员没有照片"})

@@ -5,7 +5,7 @@ from calendar import monthrange
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.datastructures import FormData
@@ -353,7 +353,7 @@ def training_tasks(request: Request, phase_id: int | None = Query(None),
     codes = permission_codes(member, session)
     read_all = allows(codes, "training:read")
     can_write = allows(codes, "training:write")
-    statement = select(TrainingTask) if read_all else member_tasks_query(member.id)
+    statement: Select[TrainingTask] = select(TrainingTask) if read_all else member_tasks_query(member.id)
     if phase_id is not None:
         statement = statement.where(TrainingTask.phase_id == phase_id)
     for raw, lower in ((deadline_from, True), (deadline_to, False)):
@@ -471,7 +471,7 @@ def assign_training_task(request: Request, id: int = Depends(object_id), data=De
                                    default=task.assignee_type)
         if task.status != "草稿":
             raise api_error(400, 40002, "任务已下发，不能修改指派")
-        rows = []
+        rows: list[tuple[str, int]] = []
         if assignee_type == "指定会员":
             rows = selected_assignees(data, session) if "member_ids" in data else sorted(
                 row for row in assignee_ids(session, id) if row[0] == MEMBER_ASSIGNEE
@@ -551,7 +551,7 @@ def checkins_page(request: Request, task_id: int | None = Query(None), member_id
     if wants_html(request):
         can_checkin = selected_task and allows(permission_codes(member, session), "checkin:write:self") \
             and visible_to_member(session, selected_task.id, member.id)
-        selected_problems = task_problem_rows(session, selected_task.id) if can_checkin else []
+        selected_problems = task_problem_rows(session, selected_task.id) if can_checkin and selected_task is not None else []
         return page(
             request, "checkin.html", checkins=data, selected_task_id=task_id,
             selected_problems=selected_problems,
@@ -576,7 +576,7 @@ def parse_checkin_problems(data, task, session):
         return []
     if not isinstance(raw, list):
         raise api_error(400, 40001, "逐题完成情况格式无效")
-    rows = {}
+    rows: dict[int, dict[str, int | None]] = {}
     active_ids = set(task_problem_ids)
     for item in raw:
         if not isinstance(item, dict):

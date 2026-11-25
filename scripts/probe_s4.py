@@ -35,7 +35,7 @@ from app.models.base import local_time
 from app.security import hash_password
 
 TOKEN_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
-results = []
+results: list[tuple[str, str, str]] = []
 
 
 def check(name, ok, detail=""):
@@ -94,6 +94,7 @@ with TestClient(app, headers={"Accept": "text/html"},
     with SessionLocal(bind=engine) as s:
         from app.models import TrainingTask
         task = s.scalar(select(TrainingTask))
+        assert task is not None
         task_id = task.id
         check("草稿状态未下发", task.published_at is None, f"published_at={task.published_at}")
 
@@ -104,6 +105,7 @@ with TestClient(app, headers={"Accept": "text/html"},
     check("设置指派并下发", asg.status_code == 303, f"got {asg.status_code}")
     with SessionLocal(bind=engine) as s:
         task = s.get(TrainingTask, task_id)
+        assert task is not None
         check("下发状态已保存", task.status == "已下发" and task.published_at is not None)
     again = client.post(f"/training-tasks/{task_id}/assign",
                         data={"csrf_token": token(client, "/training-tasks"),
@@ -172,6 +174,7 @@ with TestClient(app, headers={"Accept": "text/html"},
     # 第 4 口径：软删题目不计入分母
     with SessionLocal(bind=engine) as s:
         p_del = s.get(Problem, pid_b)
+        assert p_del is not None
         p_del.deleted_at = local_time()
         s.commit()
     from app.training import task_progress

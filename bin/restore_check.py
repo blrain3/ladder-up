@@ -5,6 +5,7 @@ import sys
 import tarfile
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
+from typing import BinaryIO, cast
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -26,7 +27,8 @@ def restore_check(archive: Path):
                 raise ValueError(f"Invalid archive entry: {entry.name!r}")
             entries[entry.name] = entry
 
-        with bundle.extractfile(entries["manifest.json"]) as source:
+        # Only regular files enter entries, so extractfile returns a stream.
+        with cast(BinaryIO, bundle.extractfile(entries["manifest.json"])) as source:
             manifest = json.load(source)
         database = manifest["database"]
         files = manifest["files"]
@@ -42,7 +44,10 @@ def restore_check(archive: Path):
         for item in [database, *files]:
             target = root / item["path"]
             target.parent.mkdir(parents=True, exist_ok=True)
-            with bundle.extractfile(entries[item["path"]]) as incoming, target.open("xb") as outgoing:
+            with (
+                cast(BinaryIO, bundle.extractfile(entries[item["path"]])) as incoming,
+                target.open("xb") as outgoing,
+            ):
                 shutil.copyfileobj(incoming, outgoing)
             if sha256(target) != item["sha256"]:
                 raise ValueError(f"SHA-256 mismatch: {item['path']}")

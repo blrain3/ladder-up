@@ -35,7 +35,7 @@ from app.main import app
 from app.models import Member, OjSubmission
 
 TOKEN_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
-results = []
+results: list[tuple[str, str, str]] = []
 
 
 def check(name, ok, detail=""):
@@ -51,6 +51,7 @@ engine = make_engine(os.environ["DATABASE_URL"])
 
 with SessionLocal(bind=engine) as s:
     demo1 = s.scalar(select(Member).where(Member.student_no == "demo0001"))
+    assert demo1 is not None
     demo1_id = demo1.id
 
 with TestClient(
@@ -120,7 +121,7 @@ with TestClient(
                                           "platform": "codeforces"}, follow_redirects=False)
     with SessionLocal(bind=engine) as s:
         second = s.scalar(select(func.count()).select_from(OjSubmission))
-    check("同步幂等（行数不变）", first == second and first >= 1
+    check("同步幂等（行数不变）", first == second and (first or 0) >= 1
           and again.status_code == 303 and again.headers.get("Location") == location, f"{first} -> {second}")
 
     # 提交列表
@@ -129,7 +130,7 @@ with TestClient(
     check("提交列表含 verdict 徽章", "badge" in subs.text)
     with SessionLocal(bind=engine) as s2:
         rows_now = s2.scalar(select(func.count()).select_from(OjSubmission))
-    check("同步后提交列表有记录", rows_now >= 1, f"rows={rows_now}")
+    check("同步后提交列表有记录", (rows_now or 0) >= 1, f"rows={rows_now}")
     check("提交列表含分页区域或记录文本",
           ("OJ 提交记录分页" in subs.text) or ("page=" in subs.text) or ("提交" in subs.text))
 

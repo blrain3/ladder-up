@@ -2,7 +2,7 @@
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import delete, false, func, inspect, or_, select, text
+from sqlalchemy import ColumnElement, delete, false, func, inspect, or_, select, text
 from sqlalchemy.orm import Session
 from starlette.datastructures import FormData
 
@@ -108,7 +108,7 @@ def knowledge_point_item(kp, count_map):
 
 
 def problem_kps(session, problem_ids):
-    grouped = {problem_id: [] for problem_id in problem_ids}
+    grouped: dict[int, list[dict[str, int | str]]] = {problem_id: [] for problem_id in problem_ids}
     if grouped:
         rows = session.execute(
             select(ProblemKp.problem_id, KnowledgePoint)
@@ -389,12 +389,12 @@ def problem_stats(request: Request, member: Member = Depends(PROBLEM_READER),
         .group_by(Problem.problem_type)
     ).all()
     tables = inspect(session.connection())
-    task_refs = {}
+    task_refs: dict[int, int] = {}
     if tables.has_table("task_problem"):
         task_refs = dict(session.execute(
             text("SELECT problem_id, count(*) FROM task_problem GROUP BY problem_id")
         ).all())
-    correct_rates = {}
+    correct_rates: dict[int, float] = {}
     if tables.has_table("oj_submission"):
         correct_rates = dict(session.execute(text(
             "SELECT problem_id, avg(CASE WHEN verdict = 'AC' THEN 1.0 ELSE 0.0 END) "
@@ -439,7 +439,7 @@ def problem_list(request: Request, kp: str | None = Query(None),
     kp = search_value(kp if kp is not None else request.query_params.get("kpId"))
     type = search_value(type if type is not None else request.query_params.get("problemType"))
     difficulty, source, keyword = map(search_value, (difficulty, source, keyword))
-    filters = [Problem.deleted_at.is_(None)]
+    filters: list[ColumnElement[bool]] = [Problem.deleted_at.is_(None)]
     if kp is not None:
         kp = int_field({"kp": kp}, "kp")
         node = session.get(KnowledgePoint, kp)

@@ -5,7 +5,9 @@ import sys
 import tarfile
 from datetime import datetime
 from pathlib import Path, PurePosixPath
+from sqlite3 import Connection
 from tempfile import TemporaryDirectory
+from typing import cast
 from zoneinfo import ZoneInfo
 
 if __package__ in (None, ""):
@@ -43,7 +45,9 @@ def sqlite_snapshot(source_url: str, destination: Path):
     target = make_engine(f"sqlite:///{destination}")
     try:
         with source.connect() as original, target.connect() as copy:
-            original.connection.driver_connection.backup(copy.connection.driver_connection)
+            original_db = cast(Connection, original.connection.driver_connection)
+            target_db = cast(Connection, copy.connection.driver_connection)
+            original_db.backup(target_db)
             return snapshot_info(copy)
     finally:
         source.dispose()

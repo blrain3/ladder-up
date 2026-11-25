@@ -56,7 +56,7 @@ from ._common import (
 from .members import MEMBER_APPROVER
 from .training import TRAINING_APPROVER, TRAINING_READER
 
-router = APIRouter()
+router: APIRouter = APIRouter()
 
 
 ASSESSMENT_TEST_TYPES = ("周测", "月测")

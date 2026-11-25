@@ -1,10 +1,12 @@
 # 会员档案、CSV 导出、奖惩与统计。
 
+from collections.abc import Sequence
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import (
     Response,
 )
-from sqlalchemy import select, true
+from sqlalchemy import ColumnElement, select, true
 from sqlalchemy.orm import Session
 
 from .. import routes
@@ -196,7 +198,7 @@ def award_list(request: Request, page_number: int = Query(1, alias="page", ge=1,
     data = {"total": total, "page": page_number, "page_size": page_size, "items": items}
     if wants_html(request):
         can_approve = scope != "mine" and allows(codes, "member:approve")
-        member_options = []
+        member_options: Sequence[Member] = []
         if can_approve:
             member_options = session.scalars(
                 active_members_query().where(approve_member_scope(member)).order_by(Member.student_no)
@@ -263,7 +265,7 @@ def stats_members(request: Request, term: str | None = Query(None),
     if not allows(permission_codes(member, session), "member:read"):
         deny(request, session, target_type="member")
     scope = approve_member_scope(member)
-    department_scope = true()
+    department_scope: ColumnElement[bool] = true()
     if member.role == "dept_admin":
         department_scope = Department.id == member.dept_id
     try:

@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+from typing import cast
 
 from sqlalchemy import and_, func, select
 
@@ -39,7 +40,7 @@ def completion(session, member_id, start, end):
 
 
 def weakest_point(scores):
-    totals = defaultdict(lambda: [0, 0, 0])
+    totals: defaultdict[str, list[int]] = defaultdict(lambda: [0, 0, 0])
     for _, raw in scores:
         for name, count in parse_kp_snapshot(raw).items():
             aggregate = totals[name]
@@ -74,7 +75,7 @@ def training_advice(session, member_id, today=None) -> list[dict]:
     observed_since = min([day for day in [first_task, *(day for day, _ in scores)] if day], default=None)
     if last_checkin or observed_since:
         first_missing = (date.fromisoformat(last_checkin) + timedelta(days=1)
-                         if last_checkin else date.fromisoformat(observed_since))
+                         if last_checkin else date.fromisoformat(cast(str, observed_since)))
         days = (today - first_missing).days + 1
         if days >= 2:
             items.append({
