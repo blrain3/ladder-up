@@ -1,22 +1,35 @@
 {% extends "base.html" %}
 {% block title %}训练预警{% endblock %}
 {% block content %}
-<h1>训练预警</h1>
-<p>预警阈值：完成率低于 {{ alerts.threshold }}，或缺卡 2 天及以上。</p>
-
-<form method="get" action="/training-alerts" class="d-flex flex-wrap gap-2 align-items-end">
-  <div class="mb-3">
-    <label class="form-label" for="q-phase">阶段</label>
-    <select id="q-phase" class="form-select" name="phase_id">
-      <option value="">全部阶段</option>
-      {% for phase in phases %}
-      <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>{{ phase.name }}</option>
-      {% endfor %}
-    </select>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">训练预警</h1>
+    <p class="text-muted small mb-0">预警阈值：完成率低于 {{ alerts.threshold }}，或缺卡 2 天及以上。</p>
   </div>
-  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
-</form>
+</div>
 
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="get" action="/training-alerts" class="d-flex flex-wrap gap-2 align-items-end">
+          <div class="mb-3">
+            <label class="form-label" for="q-phase">阶段</label>
+            <select id="q-phase" class="form-select" name="phase_id">
+              <option value="">全部阶段</option>
+              {% for phase in phases %}
+              <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>{{ phase.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if alerts["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">训练预警</caption>
@@ -30,12 +43,13 @@
         <td>{{ item.missing_days }}</td>
         <td>{{ item.deadline_at or '—' }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% if pager.previous or pager.next %}
 <nav aria-label="分页">
   <ul class="pagination pagination-sm">

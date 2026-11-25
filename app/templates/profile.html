@@ -2,7 +2,9 @@
 {% block title %}{{ profile.name }} 档案{% endblock %}
 {% block content %}
 <a href="/members"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回会员列表</a>
-<h1>{{ profile.name }} 的会员档案</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">{{ profile.name }} 的会员档案</h1>
+</div>
 
 <section id="basic">
   <h2>基本信息</h2>
@@ -59,7 +61,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录</p>
+  {{ empty_state("无记录") }}
   {% endif %}
   {{ pagination_links(profile.assessment_pagination, "考核分页") }}
 </section>
@@ -86,19 +88,13 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录</p>
+  {{ empty_state("无记录") }}
   {% endif %}
   {{ pagination_links(profile.award_pagination, "奖惩分页") }}
 </section>
 
 <section id="contest">
   <h2>赛事</h2>
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
-      <caption class="visually-hidden">赛事记录</caption>
-      <thead><tr><th>日期</th><th>赛事</th><th>队伍</th><th>名次</th><th>奖项</th></tr></thead>
-      <tbody><tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 无记录（赛事模块随 D 域交付）</td></tr></tbody>
-    </table>
-  </div>
+  {{ empty_state("无记录（赛事模块随 D 域交付）") }}
 </section>
 {% endblock %}

@@ -1,11 +1,30 @@
 {% extends "base.html" %}
 {% block title %}请求失败{% endblock %}
+{% block error_feedback %}{% endblock %}
 {% block content %}
-  {% if error_code == 50001 and request.url.path == '/assessments/run' %}
-  <p role="alert">{{ error_code }} · request_id {{ request.state.request_id }}</p>
-  {% elif error_code in (40101, 40002) and request.url.path != '/apply' %}
-  <a class="btn btn-outline-secondary" href="/login"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 返回登录</a>
-  {% elif request.url.path == '/apply' %}
-  <a class="btn btn-outline-secondary" href="/apply"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回申请页</a>
-  {% endif %}
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm text-center">
+      <div class="card-body p-4">
+        <i class="bi bi-exclamation-triangle fs-1 text-danger d-block mb-2" aria-hidden="true"></i>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h1 class="h3 mb-1 w-100">请求失败</h1>
+        </div>
+        <div role="alert" data-error-code="{{ error_code }}">
+          <p>{{ error_message }}</p>
+          <p class="text-muted small">
+            {{ error_code }}{% if error_code == 50001 and request.url.path == '/assessments/run' %} · request_id {{ request.state.request_id }}{% endif %}
+          </p>
+        </div>
+        {% if error_code // 100 == 401 or (error_code == 40002 and request.url.path != '/apply') %}
+        <a class="btn btn-outline-secondary" href="/login"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 返回登录</a>
+        {% elif request.url.path == '/apply' and error_code // 100 not in (403, 404) %}
+        <a class="btn btn-outline-secondary" href="/apply"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回申请页</a>
+        {% else %}
+        <a class="btn btn-outline-secondary" href="/members"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回会员列表</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

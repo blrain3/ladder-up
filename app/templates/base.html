@@ -1,3 +1,9 @@
+{% macro empty_state(message="暂无数据") %}
+<div class="empty-state">
+  <i class="bi bi-inbox fs-1 d-block mb-2" aria-hidden="true"></i>
+  {{ message }}
+</div>
+{% endmacro %}
 {% macro pagination_links(pagination, label) %}
 {% if pagination.previous or pagination.next %}
 <nav aria-label="{{ label }}">
@@ -157,6 +163,7 @@
     </div>
   </nav>
   <main class="container">
+    {% block error_feedback %}
     {% if error_message %}
     <div class="alert alert-danger d-flex align-items-center gap-2 alert-dismissible fade show" role="alert" data-error-code="{{ error_code }}">
       <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
@@ -164,6 +171,7 @@
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
     </div>
     {% endif %}
+    {% endblock %}
     {% if success_message %}
     <div class="alert alert-success d-flex align-items-center gap-2 alert-dismissible fade show" role="alert">
       <i class="bi bi-check-circle-fill" aria-hidden="true"></i>

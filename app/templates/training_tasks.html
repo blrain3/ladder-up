@@ -1,72 +1,87 @@
 {% extends "base.html" %}
 {% block title %}训练任务{% endblock %}
 {% block content %}
-<h1>训练任务</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">训练任务</h1>
+</div>
 
 {% if can_write %}
-<section class="card">
-  <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建任务（草稿）</div>
-  <div class="card-body">
-    <form method="post" action="/training-tasks">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="t-phase">所属阶段</label>
-        <select id="t-phase" class="form-select" name="phase_id" required>
-          {% for phase in phases %}
-          <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>
-            {{ phase.name }}（{{ phase.start_on }} ~ {{ phase.end_on }}）
-          </option>
-          {% endfor %}
-        </select>
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建任务（草稿）</div>
+      <div class="card-body p-4">
+        <form method="post" action="/training-tasks">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="t-phase">所属阶段</label>
+            <select id="t-phase" class="form-select" name="phase_id" required>
+              {% for phase in phases %}
+              <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>
+                {{ phase.name }}（{{ phase.start_on }} ~ {{ phase.end_on }}）
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="t-title">任务标题</label>
+            <input id="t-title" class="form-control" name="title" required maxlength="200">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="t-deadline">截止时间</label>
+            <input id="t-deadline" class="form-control" name="deadline_at"
+                   placeholder="YYYY-MM-DD 或 YYYY-MM-DD HH:MM">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="t-assignee">指派类型</label>
+            <select id="t-assignee" class="form-select" name="assignee_type">
+              {% for value in assignee_types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="t-members">指定会员</label>
+            <select id="t-members" class="form-select" name="member_ids" multiple>
+              {% for item in members %}<option value="{{ item.id }}">{{ item.student_no }} {{ item.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="t-problems">题目（按表单顺序入包）</label>
+            <select id="t-problems" class="form-select" name="problem_ids" multiple size="8" required>
+              {% for problem in problems %}
+              <option value="{{ problem.id }}">#{{ problem.id }} {{ problem.title }}（{{ problem.difficulty }} / {{ problem.problem_type }}）</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 创建任务</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="t-title">任务标题</label>
-        <input id="t-title" class="form-control" name="title" required maxlength="200">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="t-deadline">截止时间</label>
-        <input id="t-deadline" class="form-control" name="deadline_at"
-               placeholder="YYYY-MM-DD 或 YYYY-MM-DD HH:MM">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="t-assignee">指派类型</label>
-        <select id="t-assignee" class="form-select" name="assignee_type">
-          {% for value in assignee_types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="t-members">指定会员</label>
-        <select id="t-members" class="form-select" name="member_ids" multiple>
-          {% for item in members %}<option value="{{ item.id }}">{{ item.student_no }} {{ item.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="t-problems">题目（按表单顺序入包）</label>
-        <select id="t-problems" class="form-select" name="problem_ids" multiple size="8" required>
-          {% for problem in problems %}
-          <option value="{{ problem.id }}">#{{ problem.id }} {{ problem.title }}（{{ problem.difficulty }} / {{ problem.problem_type }}）</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 创建任务</button>
-    </form>
+    </div>
   </div>
 </section>
 {% endif %}
 
-<form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-  <div class="mb-3">
-    <label class="form-label" for="deadline-from">截止日期从</label>
-    <input id="deadline-from" class="form-control" name="deadline_from" type="date" value="{{ request.query_params.get('deadline_from', '') }}">
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+          <div class="mb-3">
+            <label class="form-label" for="deadline-from">截止日期从</label>
+            <input id="deadline-from" class="form-control" name="deadline_from" type="date" value="{{ request.query_params.get('deadline_from', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="deadline-to">至</label>
+            <input id="deadline-to" class="form-control" name="deadline_to" type="date" value="{{ request.query_params.get('deadline_to', '') }}">
+          </div>
+          {% if selected_phase_id %}<input type="hidden" name="phase_id" value="{{ selected_phase_id }}">{% endif %}
+          <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label" for="deadline-to">至</label>
-    <input id="deadline-to" class="form-control" name="deadline_to" type="date" value="{{ request.query_params.get('deadline_to', '') }}">
-  </div>
-  {% if selected_phase_id %}<input type="hidden" name="phase_id" value="{{ selected_phase_id }}">{% endif %}
-  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
-</form>
+</div>
 
+{% if tasks["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">训练任务</caption>
@@ -86,16 +101,17 @@
         <td>{{ item.deadline_at or '—' }}</td>
         <td>
           {% if can_write and item.status == '草稿' %}
-          <a class="btn btn-outline-primary btn-sm" href="/training-tasks/{{ item.id }}"><i class="bi bi-send" aria-hidden="true"></i> 设置指派并下发</a>
+          <a class="btn btn-outline-primary btn-sm" href="/training-tasks/{{ item.id }}" data-confirm="前往设置指派与下发？"><i class="bi bi-send" aria-hidden="true"></i> 设置指派并下发</a>
           {% endif %}
         </td>
       </tr>
-      {% else %}
-      <tr><td colspan="8" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% if pager.previous or pager.next %}
 <nav aria-label="分页">
   <ul class="pagination pagination-sm">

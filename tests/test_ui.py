@@ -79,7 +79,11 @@ def test_member_problem_stats_pages_have_responsive_badge_and_icons(client, coac
     signed_in(client, "coach0001")
     for path in ("/members", "/problems", "/stats/members"):
         html = _html(client, path)
-        assert "table-responsive" in html, path
+        if path == "/problems":
+            assert 'class="empty-state"' in html
+            assert "<table" not in html
+        else:
+            assert "table-responsive" in html, path
         assert "badge" in html, path
         content = html.split("<main", 1)[1].split("</main>", 1)[0]
         assert re.search(r'<i class="bi bi-[^"]+" aria-hidden="true"></i>', content), path

@@ -25,7 +25,7 @@ APP_ENV ?= development
 SESSION_TTL_HOURS ?= 8
 export DATABASE_URL APP_ENV SESSION_TTL_HOURS
 
-.PHONY: install migrate seed test lint typecheck cov check smoke e2e backup restore-check run hooks branch
+.PHONY: install migrate seed test lint typecheck cov check style smoke e2e backup restore-check run hooks branch
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -55,6 +55,9 @@ lint:
 typecheck:
 	$(PYTHON) -m mypy
 
+style:
+	$(PYTHON) scripts/probe_style.py
+
 cov:
 	$(PYTEST) --cov=app --cov-report=term-missing --cov-fail-under=80
 
@@ -62,6 +65,7 @@ check:
 	$(MAKE) lint
 	$(MAKE) typecheck
 	$(MAKE) test
+	$(MAKE) style
 	$(MAKE) smoke
 
 backup:

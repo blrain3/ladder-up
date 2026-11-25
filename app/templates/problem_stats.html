@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}题库统计{% endblock %}
 {% block content %}
-<h1>题库统计</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">题库统计</h1>
+</div>
 <h2>知识点题量</h2>
+{% if stats.kp_counts %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">知识点题量</caption>
@@ -10,12 +13,13 @@
     <tbody>
       {% for item in stats.kp_counts %}
       <tr><td>{{ item.kp_name }}</td><td>{{ item.problem_count }}</td></tr>
-      {% else %}
-      <tr><td colspan="2" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 <h2>难度分布</h2>
 <ul>
   {% for difficulty, count in stats.difficulty_counts.items() %}
@@ -29,6 +33,7 @@
   {% endfor %}
 </ul>
 <h2>题目使用情况</h2>
+{% if stats.problem_references %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">题目使用情况</caption>
@@ -40,11 +45,12 @@
         <td>{{ item.referenced_count }}</td>
         <td>{{ '{:.1%}'.format(item.correct_rate) if item.correct_rate is not none else '暂无数据' }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="3" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 <p><a class="btn btn-outline-secondary btn-sm" href="/problems"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回题库</a></p>
 {% endblock %}

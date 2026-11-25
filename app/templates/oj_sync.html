@@ -1,20 +1,30 @@
 {% extends "base.html" %}
 {% block title %}同步 Codeforces{% endblock %}
 {% block content %}
-<h1>同步 Codeforces</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">同步 Codeforces</h1>
+</div>
 {% include "oj_nav.html" %}
-<form method="post" action="/oj/sync" class="row g-2 align-items-end mb-3">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  <input type="hidden" name="platform" value="codeforces">
-  <div class="col-auto">
-    <label class="form-label" for="sync-limit">每个账号的拉取条数</label>
-    <input class="form-control" id="sync-limit" name="limit" type="number" min="1" max="{{ max_limit }}" value="{{ limit }}" required>
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" action="/oj/sync" class="row g-2 align-items-end">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="platform" value="codeforces">
+          <div class="col-auto">
+            <label class="form-label" for="sync-limit">每个账号的拉取条数</label>
+            <input class="form-control" id="sync-limit" name="limit" type="number" min="1" max="{{ max_limit }}" value="{{ limit }}" required>
+          </div>
+          <div class="col-auto"><button class="btn btn-primary">触发同步</button></div>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class="col-auto"><button class="btn btn-primary">触发同步</button></div>
-</form>
+</div>
 {% if latest_id %}
 <a href="/jobs/{{ latest_id }}">查看最近同步</a>
 {% else %}
-<p class="text-muted">暂无数据</p>
+{{ empty_state("暂无数据") }}
 {% endif %}
 {% endblock %}

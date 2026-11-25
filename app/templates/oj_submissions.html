@@ -1,36 +1,47 @@
 {% extends "base.html" %}
 {% block title %}OJ 提交记录{% endblock %}
 {% block content %}
-<h1>OJ 提交记录</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">OJ 提交记录</h1>
+</div>
 {% include "oj_nav.html" %}
-<form method="get" action="/oj/submissions" class="row g-2 align-items-end mb-3">
-  {% if filters.member_id %}<input type="hidden" name="member_id" value="{{ filters.member_id }}">{% endif %}
-  <div class="col-auto">
-    <label class="form-label" for="filter-platform">平台</label>
-    <select class="form-select" id="filter-platform" name="platform">
-      <option value="">全部</option>
-      {% for platform in platforms %}
-      <option value="{{ platform }}" {% if filters.platform == platform %}selected{% endif %}>{{ platform }}</option>
-      {% endfor %}
-    </select>
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="get" action="/oj/submissions" class="row g-2 align-items-end">
+          {% if filters.member_id %}<input type="hidden" name="member_id" value="{{ filters.member_id }}">{% endif %}
+          <div class="col-auto">
+            <label class="form-label" for="filter-platform">平台</label>
+            <select class="form-select" id="filter-platform" name="platform">
+              <option value="">全部</option>
+              {% for platform in platforms %}
+              <option value="{{ platform }}" {% if filters.platform == platform %}selected{% endif %}>{{ platform }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label" for="filter-verdict">判定</label>
+            <input class="form-control" id="filter-verdict" name="verdict" list="verdicts" maxlength="30" value="{{ filters.verdict or '' }}">
+            <datalist id="verdicts">{% for verdict in verdicts %}<option value="{{ verdict }}">{% endfor %}</datalist>
+          </div>
+          <div class="col-auto">
+            <label class="form-label" for="date-from">起始日期</label>
+            <input class="form-control" id="date-from" type="date" name="date_from" value="{{ filters.date_from or '' }}">
+          </div>
+          <div class="col-auto">
+            <label class="form-label" for="date-to">结束日期</label>
+            <input class="form-control" id="date-to" type="date" name="date_to" value="{{ filters.date_to or '' }}">
+          </div>
+          <div class="col-auto"><button class="btn btn-primary">筛选</button></div>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class="col-auto">
-    <label class="form-label" for="filter-verdict">判定</label>
-    <input class="form-control" id="filter-verdict" name="verdict" list="verdicts" maxlength="30" value="{{ filters.verdict or '' }}">
-    <datalist id="verdicts">{% for verdict in verdicts %}<option value="{{ verdict }}">{% endfor %}</datalist>
-  </div>
-  <div class="col-auto">
-    <label class="form-label" for="date-from">起始日期</label>
-    <input class="form-control" id="date-from" type="date" name="date_from" value="{{ filters.date_from or '' }}">
-  </div>
-  <div class="col-auto">
-    <label class="form-label" for="date-to">结束日期</label>
-    <input class="form-control" id="date-to" type="date" name="date_to" value="{{ filters.date_to or '' }}">
-  </div>
-  <div class="col-auto"><button class="btn btn-primary">筛选</button></div>
-</form>
+</div>
+{% if submissions["items"] %}
 <div class="table-responsive">
-  <table class="table align-middle">
+  <table class="table align-middle table-hover">
     <thead><tr><th scope="col">平台</th><th scope="col">提交编号</th><th scope="col">账号</th>
       <th scope="col">题目</th><th scope="col">判定</th><th scope="col">提交时间</th></tr></thead>
     <tbody>
@@ -40,11 +51,12 @@
         <td>{% if row.problem_id %}<a href="/problems/{{ row.problem_id }}">{{ row.problem_title }}</a>{% else %}—{% endif %}</td>
         <td><span class="badge text-bg-{{ 'success' if row.verdict == 'AC' else 'secondary' }}">{{ row.verdict or '待判定' }}</span></td>
         <td>{{ row.submitted_at }}</td></tr>
-    {% else %}
-      <tr><td colspan="6" class="text-muted">暂无数据</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {{ pagination_links(submissions.links, 'OJ 提交记录分页') }}
 {% endblock %}

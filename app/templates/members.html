@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}会员列表{% endblock %}
 {% block content %}
-<h1>会员列表</h1>
-<p>共 {{ pagination.total }} 位会员</p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">会员列表</h1>
+    <p class="text-muted small mb-0">共 {{ pagination.total }} 位会员</p>
+  </div>
+</div>
+{% if pagination["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">会员列表</caption>
@@ -15,12 +20,13 @@
         <td>{{ item.department or '—' }}</td>
         <td>{{ status_badge(item.member_status) }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 此页暂无会员</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("此页暂无会员") }}
+{% endif %}
 <nav aria-label="会员分页">
   <ul class="pagination pagination-sm">
     {% if pagination.page > 1 %}

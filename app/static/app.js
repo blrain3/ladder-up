@@ -6,5 +6,7 @@ document.addEventListener("submit", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  const link = event.target.closest("a[data-confirm]");
+  if (link && !window.confirm(link.dataset.confirm)) event.preventDefault();
   if (event.target.closest('button[data-action="print"]')) window.print();
 });
