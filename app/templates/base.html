@@ -62,7 +62,7 @@
 </head>
 <body>
   <nav class="navbar navbar-expand-md bg-dark navbar-dark" aria-label="主导航">
-    <div class="container">
+    <div class="container-fluid px-3">
       <a class="navbar-brand" href="{{ '/members' if member else '/login' }}"><i class="bi bi-ladder" aria-hidden="true"></i> 拾阶</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
               aria-controls="main-nav" aria-expanded="false" aria-label="切换导航">
@@ -87,7 +87,7 @@
             {% if allows(codes, 'system:admin') %}
             <li class="nav-item">
               <a class="nav-link {% if request.url.path == '/members/export' %}active{% endif %}" href="/members/export">
-                <i class="bi bi-download" aria-hidden="true"></i> 全量导出
+                <i class="bi bi-download" aria-hidden="true"></i> 导出
               </a>
             </li>
             {% endif %}
@@ -122,7 +122,7 @@
             {% if allows(codes, 'member:read') %}
             <li class="nav-item">
               <a class="nav-link {% if request.url.path.startswith('/stats') %}active{% endif %}" href="/stats/members">
-                <i class="bi bi-bar-chart" aria-hidden="true"></i> 档案统计
+                <i class="bi bi-bar-chart" aria-hidden="true"></i> 统计
               </a>
             </li>
             {% endif %}
@@ -137,7 +137,7 @@
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="navbar-text text-light">
               <i class="bi bi-person-circle" aria-hidden="true"></i> {{ member.name }}
-              <span class="badge text-bg-info">{{ member.role }}</span>
+              <span class="badge text-bg-info d-none d-xl-inline">{{ member.role }}</span>
             </span>
             <a class="btn btn-outline-light btn-sm" href="/me/password"><i class="bi bi-key" aria-hidden="true"></i> 修改密码</a>
             <form method="post" action="/auth/logout" class="d-flex m-0">

@@ -7,6 +7,13 @@
 .table td.knowledge-depth-4 { padding-left: 72px; }
 .table td.knowledge-depth-5 { padding-left: 96px; }
 
+/* 导航：宽屏下保持单行，避免 9 个入口挤成两行 */
+.navbar .navbar-nav .nav-link {
+  white-space: nowrap;
+  padding-inline: 0.5rem;
+  font-size: 0.9375rem;
+}
+
 .empty-state {
   padding-block: 3rem;
   color: var(--bs-secondary-color);
