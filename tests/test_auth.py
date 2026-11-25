@@ -22,6 +22,17 @@ def test_login_success_sets_a_session_cookie(client, accounts, signed_in, engine
         assert audit.actor_id == audit.target_id == ids["student01"]
 
 
+def test_anonymous_home_redirects_to_login(client):
+    response = client.get("/")
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
+def test_anonymous_home_json_returns_401(client):
+    response = client.get("/", headers={"Accept": "application/json"})
+    assert response.status_code == 401
+
+
 def test_wrong_password_returns_40101_and_creates_audit(client, accounts, engine):
     response = client.post("/auth/login", json={"student_no": "student01", "password": "wrong"})
     assert response.status_code == 401

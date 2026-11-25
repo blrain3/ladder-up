@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import (
     authenticated,
+    current_member,
     deny,
 )
 from ..db import get_session
@@ -24,7 +25,17 @@ home_router = APIRouter()
 
 
 @home_router.get("/")
-def home(_member: Member = Depends(authenticated)):
+def home(request: Request, session: Session = Depends(get_session)):
+    try:
+        current_member(request, session)
+    except HTTPException as exc:
+        if (
+            exc.status_code != 401
+            or "application/json" in request.headers.get("accept", "").lower()
+            or "x-requested-with" in request.headers
+        ):
+            raise
+        return redirect("/login")
     return redirect("/members")
 
 
