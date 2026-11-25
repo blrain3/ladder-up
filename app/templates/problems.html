@@ -1,106 +1,117 @@
 {% extends "base.html" %}
 {% block title %}题库{% endblock %}
 {% block content %}
-<h1>题库</h1>
-<p><a class="btn btn-outline-secondary btn-sm" href="/problems/stats"><i class="bi bi-bar-chart" aria-hidden="true"></i> 题库统计</a></p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">题库</h1>
+  <div class="d-flex gap-2"><a class="btn btn-outline-secondary btn-sm" href="/problems/stats"><i class="bi bi-bar-chart" aria-hidden="true"></i> 题库统计</a></div>
+</div>
 
-<section class="card">
-  <div class="card-header"><i class="bi bi-funnel" aria-hidden="true"></i> 检索</div>
-  <div class="card-body">
-    <form method="get" action="/problems" class="d-flex flex-wrap gap-2 align-items-end">
-      <div class="mb-3">
-        <label class="form-label" for="q-kp">知识点</label>
-        <select id="q-kp" class="form-select" name="kp">
-          <option value="">全部</option>
-          {% for item in knowledge_points %}
-          <option value="{{ item.id }}" {% if filters.kp == item.id %}selected{% endif %}>
-            {{ '　' * (item.depth - 1) }}{{ item.name }}
-          </option>
-          {% endfor %}
-        </select>
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-funnel" aria-hidden="true"></i> 检索</div>
+      <div class="card-body p-4">
+        <form method="get" action="/problems" class="d-flex flex-wrap gap-2 align-items-end">
+          <div class="mb-3">
+            <label class="form-label" for="q-kp">知识点</label>
+            <select id="q-kp" class="form-select" name="kp">
+              <option value="">全部</option>
+              {% for item in knowledge_points %}
+              <option value="{{ item.id }}" {% if filters.kp == item.id %}selected{% endif %}>
+                {{ '　' * (item.depth - 1) }}{{ item.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="q-difficulty">难度</label>
+            <select id="q-difficulty" class="form-select" name="difficulty">
+              <option value="">全部</option>
+              {% for value in difficulties %}
+              <option value="{{ value }}" {% if filters.difficulty == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="q-type">题型</label>
+            <select id="q-type" class="form-select" name="type">
+              <option value="">全部</option>
+              {% for value in types %}
+              <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="q-source">来源</label>
+            <input id="q-source" class="form-control" name="source" value="{{ filters.source or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="q-keyword">关键词</label>
+            <input id="q-keyword" class="form-control" name="keyword" value="{{ filters.keyword or '' }}">
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-search" aria-hidden="true"></i> 检索</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="q-difficulty">难度</label>
-        <select id="q-difficulty" class="form-select" name="difficulty">
-          <option value="">全部</option>
-          {% for value in difficulties %}
-          <option value="{{ value }}" {% if filters.difficulty == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="q-type">题型</label>
-        <select id="q-type" class="form-select" name="type">
-          <option value="">全部</option>
-          {% for value in types %}
-          <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="q-source">来源</label>
-        <input id="q-source" class="form-control" name="source" value="{{ filters.source or '' }}">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="q-keyword">关键词</label>
-        <input id="q-keyword" class="form-control" name="keyword" value="{{ filters.keyword or '' }}">
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-search" aria-hidden="true"></i> 检索</button>
-    </form>
+    </div>
   </div>
 </section>
 
-<section class="card">
-  <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 录入题目</div>
-  <div class="card-body">
-    <form method="post" action="/problems">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="p-title">标题</label>
-        <input id="p-title" class="form-control" name="title" required maxlength="200">
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 录入题目</div>
+      <div class="card-body p-4">
+        <form method="post" action="/problems">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="p-title">标题</label>
+            <input id="p-title" class="form-control" name="title" required maxlength="200">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-difficulty">难度</label>
+            <select id="p-difficulty" class="form-select" name="difficulty" required>
+              {% for value in difficulties %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-type">题型</label>
+            <select id="p-type" class="form-select" name="problem_type" required>
+              {% for value in types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-source">来源</label>
+            <input id="p-source" class="form-control" name="source" maxlength="100" placeholder="自建 / Codeforces / Vjudge">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-kp">知识点（可多选）</label>
+            <select id="p-kp" class="form-select" name="kp_ids" multiple size="6" required>
+              {% for item in knowledge_points %}
+              <option value="{{ item.id }}">{{ '　' * (item.depth - 1) }}{{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-statement">题面（Markdown）</label>
+            <textarea id="p-statement" class="form-control" name="statement" rows="6"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-sample-in">样例输入</label>
+            <textarea id="p-sample-in" class="form-control" name="sample_in" rows="3" maxlength="20000" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-sample-out">样例输出</label>
+            <textarea id="p-sample-out" class="form-control" name="sample_out" rows="3" maxlength="20000" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存题目</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-difficulty">难度</label>
-        <select id="p-difficulty" class="form-select" name="difficulty" required>
-          {% for value in difficulties %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-type">题型</label>
-        <select id="p-type" class="form-select" name="problem_type" required>
-          {% for value in types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-source">来源</label>
-        <input id="p-source" class="form-control" name="source" maxlength="100" placeholder="自建 / Codeforces / Vjudge">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-kp">知识点（可多选）</label>
-        <select id="p-kp" class="form-select" name="kp_ids" multiple size="6" required>
-          {% for item in knowledge_points %}
-          <option value="{{ item.id }}">{{ '　' * (item.depth - 1) }}{{ item.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-statement">题面（Markdown）</label>
-        <textarea id="p-statement" class="form-control" name="statement" rows="6"></textarea>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-sample-in">样例输入</label>
-        <textarea id="p-sample-in" class="form-control" name="sample_in" rows="3" maxlength="20000" required></textarea>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-sample-out">样例输出</label>
-        <textarea id="p-sample-out" class="form-control" name="sample_out" rows="3" maxlength="20000" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存题目</button>
-    </form>
+    </div>
   </div>
 </section>
 
 <p>共 {{ pagination.total }} 道题目</p>
+{% if pagination["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">题目列表</caption>
@@ -114,12 +125,13 @@
         <td>{{ item.source or '—' }}</td>
         <td>{{ item.kp_names | join('、') }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 没有匹配的题目</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("没有匹配的题目") }}
+{% endif %}
 <nav aria-label="题目分页">
   <ul class="pagination pagination-sm">
     {% if pagination.page > 1 %}

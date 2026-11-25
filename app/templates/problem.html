@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ problem.title }}{% endblock %}
 {% block content %}
-<h1>{{ problem.title }}</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">{{ problem.title }}</h1>
+</div>
 <dl class="row">
   <dt class="col-sm-3">难度</dt><dd class="col-sm-9">{{ problem.difficulty }}</dd>
   <dt class="col-sm-3">题型</dt><dd class="col-sm-9">{{ problem.problem_type }}</dd>
@@ -41,19 +43,25 @@
     <div class="card-body">{{ solution.content_html | safe }}</div>
   </article>
   {% else %}
-  <p class="text-muted"><i class="bi bi-chat-square-text" aria-hidden="true"></i> 暂无题解</p>
+  {{ empty_state("暂无题解") }}
   {% endfor %}
 
-  <form method="post" action="/problems/{{ problem.id }}/solutions" class="card">
-    <div class="card-body">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="solution-content">提交题解（Markdown）</label>
-        <textarea id="solution-content" class="form-control" name="content_md" rows="6" required></textarea>
+  <div class="row justify-content-center mt-4 mb-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" action="/problems/{{ problem.id }}/solutions">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="mb-3">
+              <label class="form-label" for="solution-content">提交题解（Markdown）</label>
+              <textarea id="solution-content" class="form-control" name="content_md" rows="6" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-send" aria-hidden="true"></i> 提交题解</button>
+          </form>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-send" aria-hidden="true"></i> 提交题解</button>
     </div>
-  </form>
+  </div>
 </section>
 
 <p><a href="/problems"><i class="bi bi-arrow-left" aria-hidden="true"></i> 返回题库</a></p>

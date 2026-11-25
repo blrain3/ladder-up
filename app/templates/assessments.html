@@ -1,34 +1,49 @@
 {% extends "base.html" %}
 {% block title %}考核结果{% endblock %}
 {% block content %}
-<h1>考核结果</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">考核结果</h1>
+</div>
 
 {% if can_run %}
-<section class="card">
-  <div class="card-header"><i class="bi bi-play-circle" aria-hidden="true"></i> 运行考核计算</div>
-  <div class="card-body">
-    <form method="post" action="/assessments/run">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="a-term">学期</label>
-        <input id="a-term" class="form-control" name="term" required maxlength="20"
-               placeholder="如 2026-2027-1" value="{{ assessments.term }}">
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-play-circle" aria-hidden="true"></i> 运行考核计算</div>
+      <div class="card-body p-4">
+        <form method="post" action="/assessments/run">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="a-term">学期</label>
+            <input id="a-term" class="form-control" name="term" required maxlength="20"
+                   placeholder="如 2026-2027-1" value="{{ assessments.term }}">
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-play" aria-hidden="true"></i> 运行考核</button>
+        </form>
       </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-play" aria-hidden="true"></i> 运行考核</button>
-    </form>
+    </div>
   </div>
 </section>
 {% endif %}
 
-<form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-  {% if request.query_params.get("scope") == "mine" %}<input type="hidden" name="scope" value="mine">{% endif %}
-  <div class="mb-3">
-    <label class="form-label" for="term-filter">学期</label>
-    <input id="term-filter" class="form-control" name="term" value="{{ assessments.term }}" placeholder="如 2026-2027-1">
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+          {% if request.query_params.get("scope") == "mine" %}<input type="hidden" name="scope" value="mine">{% endif %}
+          <div class="mb-3">
+            <label class="form-label" for="term-filter">学期</label>
+            <input id="term-filter" class="form-control" name="term" value="{{ assessments.term }}" placeholder="如 2026-2027-1">
+          </div>
+          <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
-</form>
+</div>
 
+{% if assessments["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">会员考核结果</caption>
@@ -47,15 +62,17 @@
         <td>{{ item.assessed_at }}</td>
         <td>{{ item.remark or '—' }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="7" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 
 {% if can_run %}
 <h2>最近任务运行</h2>
+{% if jobs %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">最近任务运行</caption>
@@ -75,12 +92,13 @@
         <td>{{ job.finished_at or '—' }}</td>
         <td>{{ job.detail or '—' }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="8" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% endif %}
 <nav aria-label="分页">
   {% if assessments.links.previous %}<a href="{{ assessments.links.previous }}">上一页</a>{% endif %}

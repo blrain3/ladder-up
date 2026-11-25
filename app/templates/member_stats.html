@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}会员统计{% endblock %}
 {% block content %}
-<h1>会员统计</h1>
-<p class="lead">统计范围：<strong>{{ stats.scope }}</strong>
-  {% if stats.department %}（{{ stats.department }}）{% endif %}
-  · 学期：{{ stats.term }}</p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">会员统计</h1>
+    <p class="text-muted small mb-0">统计范围：<strong>{{ stats.scope }}</strong>
+      {% if stats.department %}（{{ stats.department }}）{% endif %}
+      · 学期：{{ stats.term }}</p>
+  </div>
+</div>
 
 <section id="summary">
   <h2><i class="bi bi-bar-chart" aria-hidden="true"></i> 总览</h2>
@@ -18,6 +22,7 @@
 {% macro distribution(title, rows) %}
 <section>
   <h2>{{ title }}分布</h2>
+  {% if rows %}
   <div class="table-responsive">
     <table class="table table-sm table-hover align-middle">
       <caption class="visually-hidden">{{ title }}分布</caption>
@@ -29,6 +34,9 @@
       </tbody>
     </table>
   </div>
+  {% else %}
+  {{ empty_state() }}
+  {% endif %}
 </section>
 {% endmacro %}
 
@@ -38,6 +46,7 @@
 {{ distribution('会员类型', stats.distributions.member_type) }}
 <section>
   <h2>部门 × 会员类型</h2>
+  {% if stats.distributions.department_member_type %}
   <div class="table-responsive">
     <table class="table table-sm table-hover align-middle">
       <caption class="visually-hidden">部门与会员类型交叉统计</caption>
@@ -49,5 +58,8 @@
       </tbody>
     </table>
   </div>
+  {% else %}
+  {{ empty_state() }}
+  {% endif %}
 </section>
 {% endblock %}

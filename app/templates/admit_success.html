@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}录取成功{% endblock %}
 {% block content %}
-<h1 data-member-id="{{ admitted.id }}">录取成功</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1" data-member-id="{{ admitted.id }}">录取成功</h1>
+</div>
 <p>{{ admitted.name }}（{{ admitted.student_no }}）已成为观察会员。</p>
 <p>请将一次性密码交给该会员。密码仅在此页显示，会员首次登录后须修改密码。</p>
 <p><strong id="one-time-password">{{ one_time_password }}</strong></p>

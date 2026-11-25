@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}作业状态{% endblock %}
 {% block content %}
-<h1>作业状态</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">作业状态</h1>
+</div>
 {% if job.job_name == 'oj.sync' %}{% include "oj_nav.html" %}{% endif %}
 {% set labels = {'running': '运行中', 'success': '成功', 'failed': '失败', 'skipped': '已跳过'} %}
 <dl id="job-state" data-status="{{ job.status }}" class="row">

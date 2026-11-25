@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}任务详情{% endblock %}
 {% block content %}
-<h1>{{ task.title }}</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">{{ task.title }}</h1>
+</div>
 <dl class="row">
   <dt class="col-sm-3">状态</dt><dd class="col-sm-9">{{ status_badge(task.status) }}</dd>
   <dt class="col-sm-3">指派类型</dt><dd class="col-sm-9">{{ task.assignee_type }}</dd>
@@ -11,37 +13,42 @@
 </dl>
 
 {% if can_assign %}
-<section class="card">
-  <div class="card-header"><i class="bi bi-send" aria-hidden="true"></i> 指派名单</div>
-  <div class="card-body">
-    <form method="post" action="/training-tasks/{{ task.id }}/assign">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="a-type">指派类型</label>
-        <select id="a-type" class="form-select" name="assignee_type">
-          {% for value in assignee_types %}
-          <option value="{{ value }}" {% if task.assignee_type == value %}selected{% endif %}>{{ value }}</option>
-          {% endfor %}
-        </select>
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-send" aria-hidden="true"></i> 指派名单</div>
+      <div class="card-body p-4">
+        <form method="post" action="/training-tasks/{{ task.id }}/assign">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="a-type">指派类型</label>
+            <select id="a-type" class="form-select" name="assignee_type">
+              {% for value in assignee_types %}
+              <option value="{{ value }}" {% if task.assignee_type == value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="a-members">指定会员（可多选）</label>
+            <select id="a-members" class="form-select" name="member_ids" multiple size="6">
+              {% for item in members %}
+              <option value="{{ item.id }}" {% if task.assignee_type == '指定会员' and item.id in task.assignees | map(attribute='id') | list %}selected{% endif %}>
+                {{ item.student_no }} {{ item.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary"
+                  data-confirm="确定下发该任务？此操作不可撤销"><i class="bi bi-send" aria-hidden="true"></i> 设置指派并下发</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="a-members">指定会员（可多选）</label>
-        <select id="a-members" class="form-select" name="member_ids" multiple size="6">
-          {% for item in members %}
-          <option value="{{ item.id }}" {% if task.assignee_type == '指定会员' and item.id in task.assignees | map(attribute='id') | list %}selected{% endif %}>
-            {{ item.student_no }} {{ item.name }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="btn btn-primary"
-              data-confirm="确定下发该任务？此操作不可撤销"><i class="bi bi-send" aria-hidden="true"></i> 设置指派并下发</button>
-    </form>
+    </div>
   </div>
 </section>
 {% endif %}
 
 <h2>题目列表</h2>
+{% if task.problems %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">任务题目</caption>
@@ -54,12 +61,13 @@
         <td>{{ problem.difficulty }}</td>
         <td>{{ problem.problem_type }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 
 <h2>我的进度</h2>
 <p>完成率：{{ (task.progress.rate * 100) | round(1) }}%（{{ task.progress.solved }}/{{ task.progress.total }}）</p>
@@ -67,6 +75,7 @@
 {% if can_checkin %}<p><a class="btn btn-primary" href="/checkins?task_id={{ task.id }}"><i class="bi bi-calendar-check" aria-hidden="true"></i> 去打卡</a></p>{% endif %}
 
 <h2>我的打卡</h2>
+{% if task.progress.checkins %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">我的打卡记录</caption>
@@ -85,10 +94,11 @@
         </td>
         <td>{{ item.note or '—' }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% endblock %}

@@ -1,23 +1,34 @@
 {% extends "base.html" %}
 {% block title %}训练进度{% endblock %}
 {% block content %}
-<h1>训练进度</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">训练进度</h1>
+</div>
 
-<form method="get" action="/training-progress" class="d-flex flex-wrap gap-2 align-items-end">
-  <div class="mb-3">
-    <label class="form-label" for="q-phase">阶段</label>
-    <select id="q-phase" class="form-select" name="phase_id">
-      <option value="">全部阶段</option>
-      {% for phase in phases %}
-      <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>{{ phase.name }}</option>
-      {% endfor %}
-    </select>
+<div class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="get" action="/training-progress" class="d-flex flex-wrap gap-2 align-items-end">
+          <div class="mb-3">
+            <label class="form-label" for="q-phase">阶段</label>
+            <select id="q-phase" class="form-select" name="phase_id">
+              <option value="">全部阶段</option>
+              {% for phase in phases %}
+              <option value="{{ phase.id }}" {% if selected_phase_id == phase.id %}selected{% endif %}>{{ phase.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-funnel" aria-hidden="true"></i> 筛选</button>
-</form>
+</div>
 
 {% if progress["view_all"] %}
 <h2>全体完成率</h2>
+{% if progress["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">全体完成率</caption>
@@ -33,15 +44,17 @@
           <progress class="progress w-100" max="100" value="{{ (item.rate * 100) | round(1) }}" aria-label="会员 {{ item.member_id }} 的完成率">{{ (item.rate * 100) | round(1) }}%</progress>
         </td>
       </tr>
-      {% else %}
-      <tr><td colspan="5" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
+{% else %}
 <h2>我的完成率</h2>
 {% for item in progress["items"] %}
+{% if item["tasks"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">我的任务完成率</caption>
@@ -58,12 +71,13 @@
           <progress class="progress w-100" max="100" value="{{ (task.rate * 100) | round(1) }}" aria-label="{{ task.title }}的完成率">{{ (task.rate * 100) | round(1) }}%</progress>
         </td>
       </tr>
-      {% else %}
-      <tr><td colspan="6" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% endfor %}
 {% endif %}
 {% if pager.previous or pager.next %}

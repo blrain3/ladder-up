@@ -27,6 +27,8 @@ jobs:
         run: ruff check app bin tests scripts
       - name: Typecheck
         run: make typecheck
+      - name: Style
+        run: make style
       - name: Migrate from empty
         run: |
           mkdir -p data

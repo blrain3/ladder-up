@@ -1,31 +1,38 @@
 {% extends "base.html" %}
 {% block title %}知识点{% endblock %}
 {% block content %}
-<h1>知识点树</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">知识点树</h1>
+</div>
 
-<section class="card">
-  <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建知识点</div>
-  <div class="card-body">
-    <form method="post" action="/knowledge-points" class="d-flex flex-wrap gap-2 align-items-end">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="kp-name">名称</label>
-        <input id="kp-name" class="form-control" name="name" required maxlength="40">
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建知识点</div>
+      <div class="card-body p-4">
+        <form method="post" action="/knowledge-points" class="d-flex flex-wrap gap-2 align-items-end">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="kp-name">名称</label>
+            <input id="kp-name" class="form-control" name="name" required maxlength="40">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="kp-parent">父级</label>
+            <select id="kp-parent" class="form-select" name="parent_id">
+              <option value="">（作为根节点）</option>
+              {% for item in tree["items"] %}
+              <option value="{{ item.id }}">{{ '　' * (item.depth - 1) }}{{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 新建</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="kp-parent">父级</label>
-        <select id="kp-parent" class="form-select" name="parent_id">
-          <option value="">（作为根节点）</option>
-          {% for item in tree["items"] %}
-          <option value="{{ item.id }}">{{ '　' * (item.depth - 1) }}{{ item.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 新建</button>
-    </form>
+    </div>
   </div>
 </section>
 
+{% if tree["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">知识点树</caption>
@@ -40,7 +47,8 @@
           <div class="d-flex gap-2">
             <form method="post" action="/knowledge-points/{{ item.id }}/move" class="d-flex gap-2">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input class="form-control" name="parent_id" placeholder="父级 ID，留空移到根" size="16">
+              <label class="visually-hidden" for="move-parent-{{ item.id }}">父级 ID，留空移到根</label>
+              <input class="form-control" id="move-parent-{{ item.id }}" name="parent_id" placeholder="父级 ID，留空移到根" size="16">
               <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrows-move" aria-hidden="true"></i> 移动</button>
             </form>
             <form method="post" action="/knowledge-points/{{ item.id }}/delete">
@@ -51,10 +59,11 @@
           </div>
         </td>
       </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无知识点</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无知识点") }}
+{% endif %}
 {% endblock %}

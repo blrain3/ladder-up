@@ -1,37 +1,44 @@
 {% extends "base.html" %}
 {% block title %}训练阶段{% endblock %}
 {% block content %}
-<h1>训练阶段</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">训练阶段</h1>
+</div>
 
-<section class="card">
-  <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建阶段</div>
-  <div class="card-body">
-    <form method="post" action="/training-phases">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="p-plan">所属计划</label>
-        <select id="p-plan" class="form-select" name="plan_id" required>
-          {% for plan in plans %}<option value="{{ plan.id }}">{{ plan.term }}</option>{% endfor %}
-        </select>
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建阶段</div>
+      <div class="card-body p-4">
+        <form method="post" action="/training-phases">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="p-plan">所属计划</label>
+            <select id="p-plan" class="form-select" name="plan_id" required>
+              {% for plan in plans %}<option value="{{ plan.id }}">{{ plan.term }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-name">阶段名称</label>
+            <input id="p-name" class="form-control" name="name" required maxlength="40"
+                   placeholder="基础 / 强化 / 冲刺">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-start">开始日期</label>
+            <input id="p-start" class="form-control" name="start_on" type="date" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="p-end">结束日期</label>
+            <input id="p-end" class="form-control" name="end_on" type="date" required>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存阶段</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-name">阶段名称</label>
-        <input id="p-name" class="form-control" name="name" required maxlength="40"
-               placeholder="基础 / 强化 / 冲刺">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-start">开始日期</label>
-        <input id="p-start" class="form-control" name="start_on" type="date" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="p-end">结束日期</label>
-        <input id="p-end" class="form-control" name="end_on" type="date" required>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存阶段</button>
-    </form>
+    </div>
   </div>
 </section>
 
+{% if phases["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">训练阶段</caption>
@@ -44,10 +51,11 @@
         <td>{{ item.start_on }}</td>
         <td>{{ item.end_on }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 {% endblock %}

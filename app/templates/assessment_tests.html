@@ -1,35 +1,42 @@
 {% extends "base.html" %}
 {% block title %}测评{% endblock %}
 {% block content %}
-<h1>周测 / 月测</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-1">周测 / 月测</h1>
+</div>
 
 {% if can_create %}
-<section class="card">
-  <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建测评</div>
-  <div class="card-body">
-    <form method="post" action="/assessment-tests">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="mb-3">
-        <label class="form-label" for="a-title">标题</label>
-        <input id="a-title" class="form-control" name="title" required maxlength="120"
-               placeholder="如 第一周周测">
+<section class="row justify-content-center mt-4 mb-5">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle" aria-hidden="true"></i> 新建测评</div>
+      <div class="card-body p-4">
+        <form method="post" action="/assessment-tests">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label" for="a-title">标题</label>
+            <input id="a-title" class="form-control" name="title" required maxlength="120"
+                   placeholder="如 第一周周测">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="a-type">类型</label>
+            <select id="a-type" class="form-select" name="test_type" required>
+              {% for value in test_types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="a-held-on">测评日期</label>
+            <input id="a-held-on" class="form-control" name="held_on" type="date" required>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存测评</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="a-type">类型</label>
-        <select id="a-type" class="form-select" name="test_type" required>
-          {% for value in test_types %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="a-held-on">测评日期</label>
-        <input id="a-held-on" class="form-control" name="held_on" type="date" required>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> 保存测评</button>
-    </form>
+    </div>
   </div>
 </section>
 {% endif %}
 
+{% if tests["items"] %}
 <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <caption class="visually-hidden">周测与月测</caption>
@@ -46,12 +53,13 @@
           {% else %}—{% endif %}
         </td>
       </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-muted"><i class="bi bi-inbox" aria-hidden="true"></i> 暂无数据</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% else %}
+{{ empty_state("暂无数据") }}
+{% endif %}
 <p>共 {{ tests.total }} 场测评</p>
 <nav aria-label="分页">
   {% if tests.links.previous %}<a href="{{ tests.links.previous }}">上一页</a>{% endif %}

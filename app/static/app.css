@@ -7,6 +7,12 @@
 .table td.knowledge-depth-4 { padding-left: 72px; }
 .table td.knowledge-depth-5 { padding-left: 96px; }
 
+.empty-state {
+  padding-block: 3rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+
 progress.progress {
   appearance: none;
   color: var(--bs-primary);
