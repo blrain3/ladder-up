@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}作业状态{% endblock %}
+{% block content %}
+<h1>作业状态</h1>
+{% if job.job_name == 'oj.sync' %}{% include "oj_nav.html" %}{% endif %}
+{% set labels = {'running': '运行中', 'success': '成功', 'failed': '失败', 'skipped': '已跳过'} %}
+<dl id="job-state" data-status="{{ job.status }}" class="row">
+  <dt class="col-sm-3">作业编号</dt><dd class="col-sm-9">{{ job.id }}</dd>
+  <dt class="col-sm-3">状态</dt><dd class="col-sm-9">{{ labels[job.status] }}</dd>
+  <dt class="col-sm-3">业务日期</dt><dd class="col-sm-9">{{ job.biz_date }}</dd>
+  <dt class="col-sm-3">尝试次数</dt><dd class="col-sm-9">{{ job.attempts }}</dd>
+  {% if job.detail %}
+    {% if job.detail.created is defined %}
+    <dt class="col-sm-3">新增 / 跳过</dt><dd class="col-sm-9">{{ job.detail.created }} / {{ job.detail.skipped }}</dd>
+    {% endif %}
+    {% if job.detail.message %}
+    <dt class="col-sm-3">摘要</dt><dd class="col-sm-9">{{ job.detail.message }}</dd>
+    {% endif %}
+    {% if job.detail.skip == 'disabled' %}
+    <dt class="col-sm-3">跳过原因</dt><dd class="col-sm-9">在线同步未启用</dd>
+    {% endif %}
+    {% if job.status == 'failed' %}
+    <dt class="col-sm-3">错误码</dt><dd class="col-sm-9">{{ job.detail.error or job.detail.code or '—' }}</dd>
+    {% endif %}
+  {% elif job.status != 'running' %}
+    <dt class="col-sm-3">结果</dt><dd class="col-sm-9">暂无数据</dd>
+  {% endif %}
+</dl>
+{% if job.status == 'running' %}
+<p id="polling-notice" role="status">正在查询作业状态。<a href="{{ request.url.path }}">刷新状态</a></p>
+<script src="/static/job-status.js" defer></script>
+{% endif %}
+{% endblock %}

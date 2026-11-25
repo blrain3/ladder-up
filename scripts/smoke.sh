@@ -20,6 +20,8 @@ export SEED_ADMIN_PASSWORD='SmokeAdminPassword!'
 export SEED_DEMO_PASSWORD='Demo1234!'
 export APP_ENV=development
 export UPLOADS_DIR="$work/uploads"
+export OJ_FIXTURE_PATH="$(pwd)/tests/fixtures/cf_user_status.json"
+[[ -r "$OJ_FIXTURE_PATH" ]]
 
 migration_head=$("$python" -c 'from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -474,4 +476,35 @@ expect_http 401 -d student_no=demo0003 \
     --data-urlencode "password=$SEED_DEMO_PASSWORD" "$url/auth/login"
 [[ $(json_field code) == 40101 ]]
 
-echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow, S5 assessment and membership flow, S6 awards/profile CSV/member stats"
+# S7: replay Vjudge CSV and the local Codeforces response, then recheck the training page.
+expect_http 200 -b "$work/member.jar" -d "csrf_token=$demo1_csrf" \
+    -d platform=vjudge -d handle=ladder_csv "$url/oj/accounts"
+expect_http 200 -b "$work/member.jar" -d "csrf_token=$demo1_csrf" \
+    -d platform=codeforces -d handle=ladder_smoke "$url/oj/accounts"
+cat > "$work/vjudge.csv" <<'CSV'
+handle,problem,verdict,submitted_at
+ladder_csv,HDU-1000,AC,2026-11-24 10:00:00
+ladder_csv,HDU-1000,INVALID,2026-11-24 10:01:00
+CSV
+expect_http 200 -b "$work/coach.jar" -F "csrf_token=$coach_csrf" \
+    -F "file=@$work/vjudge.csv;type=text/csv" "$url/oj/vjudge-import"
+[[ $(json_field data accepted) == 1 && $(json_field data rejected) == 1 ]]
+expect_http 202 -b "$work/coach.jar" -d "csrf_token=$coach_csrf" \
+    -d platform=codeforces "$url/oj/sync"
+job_run_id=$(json_field data jobRunId)
+[[ "$job_run_id" =~ ^[1-9][0-9]*$ ]]
+for attempt in $(seq 1 30); do
+    expect_http 200 -b "$work/coach.jar" "$url/jobs/$job_run_id"
+    job_status=$(json_field data status)
+    if [[ "$job_status" != running ]]; then break; fi
+    sleep 0.1
+done
+[[ "$job_status" == success && $(json_field data detail created) == 3 ]]
+expect_http 200 -b "$work/member.jar" -H 'Accept: text/html' "$url/oj/submissions?platform=codeforces"
+grep -Fq '770003' "$work/body.json"
+grep -Fq 'ladder_smoke' "$work/body.json"
+expect_http 200 -b "$work/member.jar" -H 'Accept: text/html' "$url/checkins?task_id=$task_id"
+grep -Fq '逐题打卡' "$work/body.json"
+grep -Fq '>补卡</span>' "$work/body.json"
+
+echo "Smoke PASS: health $migration_head, admin login, demo login, anonymous apply, review, interview, admit, admitted member card 200, real PNG upload 200, fake PNG upload 400, password rotation, coach problem bank flow (kp tree, search by parent, XSS escaped, solution rendered), training flow, S5 assessment and membership flow, S6 awards/profile CSV/member stats, S7 offline OJ imports/sync and checkin page"

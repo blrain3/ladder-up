@@ -137,9 +137,11 @@ def test_stats_count_task_uses_and_show_missing_correct_rate(client, writer, eng
             "INSERT INTO task_problem (task_id, problem_id) "
             "SELECT id, ? FROM training_task WHERE title = '统计任务二'", (first,)
         )
-        connection.exec_driver_sql("CREATE TABLE oj_submission (problem_id INTEGER, verdict TEXT)")
         connection.exec_driver_sql(
-            "INSERT INTO oj_submission VALUES (?, 'AC'), (?, 'WA')", (first, first),
+            "INSERT INTO oj_submission (platform, external_id, problem_id, verdict, submitted_at, synced_at) "
+            "VALUES ('codeforces', ?, ?, ?, ?, ?)",
+            [(external_id, first, verdict, "2026-09-01 00:00:00", "2026-09-01 00:00:00")
+             for external_id, verdict in (("s7-ac", "AC"), ("s7-wa", "WA"))],
         )
     stats = client.get("/problems/stats").json()["data"]
     usage = {row["problem_id"]: row for row in stats["problem_references"]}

@@ -65,5 +65,6 @@ class JobRun(Base):
     status: Mapped[str] = mapped_column(Text)
     attempts: Mapped[int] = mapped_column(Integer, server_default="1")
     started_at: Mapped[str] = mapped_column(Text)
+    lease_expires_at: Mapped[str | None] = mapped_column(Text)
     finished_at: Mapped[str | None] = mapped_column(Text)
     detail: Mapped[str | None] = mapped_column(Text)

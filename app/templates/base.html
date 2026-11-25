@@ -85,6 +85,13 @@
               </a>
             </li>
             {% endif %}
+            {% if allows(codes, 'member:read') or allows(codes, 'member:read:self') or allows(codes, 'training:approve') %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.url.path.startswith('/oj/') or request.url.path == '/training-advice' %}active{% endif %}" href="/oj/accounts">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i> OJ 同步
+              </a>
+            </li>
+            {% endif %}
             {% if allows(codes, 'problem:read') %}
             <li class="nav-item">
               <a class="nav-link {% if request.url.path.startswith('/problems') %}active{% endif %}" href="/problems">

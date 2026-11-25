@@ -1,0 +1,9 @@
+[Unit]
+Description=Ladder Up job %i
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ladder-up
+ExecStart=/usr/bin/docker compose run --rm app bin/job %i

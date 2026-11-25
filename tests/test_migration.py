@@ -138,3 +138,38 @@ def test_s6_award_indexes_survive_upgrade_roundtrip(engine):
     unique = indexes["uk_award_member_day_title"]
     assert unique["unique"]
     assert unique["column_names"] == ["member_id", "happened_on", "title"]
+
+
+def test_s7_indexes_and_config_downgrade_preserve_existing_keys(engine):
+    from alembic.config import Config
+
+    from alembic import command
+
+    config = Config("alembic.ini")
+    for table, columns in (
+        ("oj_account", ["platform", "handle"]),
+        ("oj_submission", ["platform", "external_id"]),
+    ):
+        index = next(i for i in inspect(engine).get_indexes(table) if i["name"] == f"uk_{table}")
+        assert index["unique"] and index["column_names"] == columns
+
+    query = "SELECT config_key, config_value FROM sys_config WHERE config_key LIKE 'oj.sync.%'"
+    with engine.connect() as connection:
+        assert dict(connection.exec_driver_sql(query).all()) == {
+            "oj.sync.enabled": "false", "oj.sync.limit": "100",
+        }
+    command.downgrade(config, "0007")
+    with engine.begin() as connection:
+        assert connection.exec_driver_sql(query).all() == []
+        connection.exec_driver_sql(
+            "INSERT INTO sys_config (config_key, config_value, updated_at) "
+            "VALUES ('oj.sync.limit', '50', '2026-01-01')"
+        )
+    assert {"oj_account", "oj_submission"}.isdisjoint(inspect(engine).get_table_names())
+    command.upgrade(config, "head")
+    command.downgrade(config, "0007")
+    with engine.connect() as connection:
+        assert dict(connection.exec_driver_sql(query).all()) == {"oj.sync.limit": "50"}
+        assert connection.exec_driver_sql(
+            "SELECT config_value FROM sys_config WHERE config_key = 'training.promote_threshold'"
+        ).scalar_one() == "0.6"
