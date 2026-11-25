@@ -1,32 +1,38 @@
 {% extends "base.html" %}
 {% block title %}入会申请{% endblock %}
 {% block content %}
-<div class="row"><div class="col-sm-8 col-md-6">
-  <h1>入会申请</h1>
-  <p class="text-muted">提交后由协会审核，请如实填写以下信息。</p>
-  <form method="post" action="/apply">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    {% for name, label, kind, length in [
-      ('student_no', '学号', 'text', 20), ('name', '姓名', 'text', 20),
-      ('major', '专业', 'text', 80), ('grade', '入学年份', 'text', 4),
-      ('phone', '手机', 'tel', 20), ('email', '邮箱', 'email', 120)] %}
-    <div class="mb-3">
-      <label class="form-label" for="{{ name }}">{{ label }}</label>
-      <input class="form-control" id="{{ name }}" name="{{ name }}" type="{{ kind }}" maxlength="{{ length }}"
-        value="{{ values.get(name, '') }}"
-        {% if name in ('student_no', 'name') %}required{% endif %}
-        {% if name == 'grade' %}inputmode="numeric" pattern="[0-9]{4}"{% endif %}>
+<div class="row justify-content-center form-page-row">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1>入会申请</h1>
+        <p class="text-muted">提交后由协会审核，请如实填写以下信息。</p>
+        <form method="post" action="/apply">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% for name, label, kind, length in [
+            ('student_no', '学号', 'text', 20), ('name', '姓名', 'text', 20),
+            ('major', '专业', 'text', 80), ('grade', '入学年份', 'text', 4),
+            ('phone', '手机', 'tel', 20), ('email', '邮箱', 'email', 120)] %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ name }}">{{ label }}</label>
+            <input class="form-control" id="{{ name }}" name="{{ name }}" type="{{ kind }}" maxlength="{{ length }}"
+              value="{{ values.get(name, '') }}"
+              {% if name in ('student_no', 'name') %}required{% endif %}
+              {% if name == 'grade' %}inputmode="numeric" pattern="[0-9]{4}"{% endif %}>
+          </div>
+          {% endfor %}
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="agree_observation" id="agree-observation" value="1"
+              {% if values.get('agree_observation') == '1' %}checked{% endif %}>
+            <label class="form-check-label" for="agree-observation">
+              我已阅读并知悉观察期规则（通过考核后方可转正）
+            </label>
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-send" aria-hidden="true"></i> 提交申请</button>
+        </form>
+        <p class="text-muted mt-3 mb-0">提交后可凭 <a href="/apply/status">申请编号与学号</a> 查询进度。</p>
+      </div>
     </div>
-    {% endfor %}
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" name="agree_observation" id="agree-observation" value="1"
-        {% if values.get('agree_observation') == '1' %}checked{% endif %}>
-      <label class="form-check-label" for="agree-observation">
-        我已阅读并知悉观察期规则（通过考核后方可转正）
-      </label>
-    </div>
-    <button class="btn btn-primary" type="submit"><i class="bi bi-send" aria-hidden="true"></i> 提交申请</button>
-  </form>
-  <p class="text-muted">提交后可凭 <a href="/apply/status">申请编号与学号</a> 查询进度。</p>
-</div></div>
+  </div>
+</div>
 {% endblock %}

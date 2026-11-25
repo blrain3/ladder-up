@@ -1,18 +1,24 @@
 {% extends "base.html" %}
 {% block title %}登录{% endblock %}
 {% block content %}
-<div class="row"><div class="col-sm-6 col-md-4">
-  <h1>登录</h1>
-  <form method="post" action="/auth/login">
-    <div class="mb-3">
-      <label class="form-label" for="student-no">学号</label>
-      <input class="form-control" id="student-no" name="student_no" autocomplete="username" maxlength="20" required>
+<div class="row justify-content-center form-page-row">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1>登录</h1>
+        <form method="post" action="/auth/login">
+          <div class="mb-3">
+            <label class="form-label" for="student-no">学号</label>
+            <input class="form-control" id="student-no" name="student_no" autocomplete="username" maxlength="20" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="password">密码</label>
+            <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 登录</button>
+        </form>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label" for="password">密码</label>
-      <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required>
-    </div>
-    <button class="btn btn-primary" type="submit"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> 登录</button>
-  </form>
-</div></div>
+  </div>
+</div>
 {% endblock %}
