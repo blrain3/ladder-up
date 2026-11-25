@@ -20,3 +20,21 @@
 - 数据表、接口、验收标准以 `docs/数据库设计-v1.0.md` 与 `docs/接口设计-v1.0.md` 为准；与需求基线冲突时以基线为准，并在 PR 中说明。
 - 不提交真实成员数据、凭据、校内系统截图。
 - 图表用 PlantUML，不提交手工导出的图片替代图源。
+
+### 浏览器端到端冒烟测试
+
+首次运行时，在项目虚拟环境中安装开发依赖和 Chromium：
+
+```sh
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m playwright install chromium
+make e2e
+```
+
+Linux 环境如缺少 Chromium 系统依赖，可执行
+`python -m playwright install --with-deps chromium`。需要查看每条用例耗时时，
+运行 `.venv/bin/pytest tests/e2e -q --durations=0`。
+
+测试使用无头 Chromium，并自行启动监听回环随机端口的 Uvicorn。数据库和上传目录均为测试临时目录。
+默认收集通过 `--ignore=tests/e2e` 跳过浏览器测试，因此 `make test` 和 `make check` 也会跳过它。
+CI 的独立 `e2e` job 仅在推送到 `main` 时执行。
