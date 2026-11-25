@@ -49,8 +49,10 @@ def current_member(request: Request, session: Session = Depends(get_session)):
     token = request.cookies.get("sid")
     current = load_session(token, session=session)
     member = session.get(Member, current.member_id) if current else None
-    if not active_member(member):
+    if member is None or not active_member(member):
         raise unauthorized()
+    # load_session only returns an active session for a nonempty token.
+    assert current is not None and token is not None
     request.state.member_id = member.id
     request.state.member = member
     request.state.csrf_token = digest(token.encode(), current.csrf_nonce.encode(), "sha256").hex()

@@ -71,7 +71,7 @@ def requires_password_change(request, token):
     with SessionLocal(bind=request.app.state.engine) as session:
         current = load_session(token, session=session)
         member = session.get(Member, current.member_id) if current else None
-        if active_member(member) and member.must_change_password:
+        if member is not None and active_member(member) and member.must_change_password:
             request.state.member_id = member.id
             return True
         return False

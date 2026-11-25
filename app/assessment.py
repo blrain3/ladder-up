@@ -10,6 +10,7 @@ import re
 from calendar import monthrange
 from datetime import date, datetime
 from math import isfinite
+from typing import SupportsInt, cast
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, update
@@ -209,7 +210,7 @@ def record_scores(session, test_id, rows, operator_id, scope) -> dict:
             if before == values:
                 continue
             result = session.execute(update(TestScore).where(
-                TestScore.id == existing.id, TestScore.version == int(version),
+                TestScore.id == existing.id, TestScore.version == int(cast(str | SupportsInt, version)),
             ).values(**values, version=TestScore.version + 1))
             if result.rowcount != 1:
                 raise AssessmentError("成绩已变更，请刷新后重试", code=40902, status=409)

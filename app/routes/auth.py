@@ -60,14 +60,14 @@ def login(request: Request, data=Depends(payload), session: Session = Depends(ge
     if isinstance(student_no, str) and 0 < len(student_no.strip()) <= 20:
         member = session.scalar(select(Member).where(Member.student_no == student_no.strip()))
     member_id = member.id if member else None
-    previous_hash = member.password_hash if active_member(member) else None
+    previous_hash = member.password_hash if member is not None and active_member(member) else None
     valid = previous_hash and isinstance(password, str) and verify_password(password, previous_hash)
     if valid:
         # Recheck the credential after acquiring the write lock to serialize with password changes.
         session.rollback()
         session.execute(text("BEGIN IMMEDIATE"))
         member = session.get(Member, member_id)
-        valid = active_member(member) and member.password_hash == previous_hash
+        valid = member is not None and active_member(member) and member.password_hash == previous_hash
     if not valid:
         message = "学号或密码错误"
         audit(request, session, "auth.login.failed", target_id=member_id)
@@ -76,6 +76,7 @@ def login(request: Request, data=Depends(payload), session: Session = Depends(ge
             return page(request, "login.html", status=401, error_code=40101, error_message=message)
         raise HTTPException(401, message)
 
+    assert member is not None  # A valid login has a member after the locked recheck.
     ttl = request.app.state.settings.session_ttl_hours
     previous_sid = request.cookies.get("sid")
     if previous_sid:
@@ -137,9 +138,10 @@ def change_password(request: Request, member: Member = Depends(authenticated),
     sid = request.cookies["sid"]
     session.rollback()
     session.execute(text("BEGIN IMMEDIATE"))
-    member = session.get(Member, member_id)
-    if not active_member(member) or not load_session(sid, session=session):
+    refreshed_member = session.get(Member, member_id)
+    if refreshed_member is None or not active_member(refreshed_member) or not load_session(sid, session=session):
         raise unauthorized()
+    member = refreshed_member
     if member.password_hash != previous_hash:
         raise HTTPException(409, {"code": 40902, "message": "密码已变更，请重试"})
     if member.must_change_password and old_password == new_password:

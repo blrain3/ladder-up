@@ -37,7 +37,7 @@ from app.models import Member
 from app.models.base import local_time
 
 TOKEN_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
-results = []
+results: list[tuple[str, str, str]] = []
 
 
 def check(name, ok, detail=""):
@@ -54,6 +54,7 @@ engine = make_engine(os.environ["DATABASE_URL"])
 with SessionLocal(bind=engine) as s:
     demo1 = s.scalar(select(Member).where(Member.student_no == "demo0001"))
     demo2 = s.scalar(select(Member).where(Member.student_no == "demo0002"))
+    assert demo1 is not None and demo2 is not None
     demo1_id, demo2_id = demo1.id, demo2.id
 
 with TestClient(

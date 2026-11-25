@@ -1,12 +1,13 @@
 # 入会申请、审核、面试与录取。
 import re
 import secrets
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import (
     JSONResponse,
 )
-from sqlalchemy import func, select, update
+from sqlalchemy import CursorResult, func, select, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
@@ -164,7 +165,7 @@ def submit_application(request: Request, form=Depends(csrf_form),
         apply_type="入会", status="待审核", active_flag="1", created_at=local_time(),
         receipt_code_hash=token_digest(receipt_code),
     ).on_conflict_do_nothing(index_elements=["student_no", "apply_type", "active_flag"])
-    if session.execute(statement).rowcount == 0:
+    if cast(CursorResult, session.execute(statement)).rowcount == 0:
         existing_id = session.scalar(select(MemberApplication.id).where(
             MemberApplication.student_no == values["student_no"],
             MemberApplication.apply_type == "入会", MemberApplication.active_flag == "1",
@@ -181,7 +182,7 @@ def submit_application(request: Request, form=Depends(csrf_form),
         MemberApplication.apply_type == "入会", MemberApplication.active_flag == "1",
     ))
     session.commit()
-    return page(request, "apply_success.html", application_no=application.id, receipt_code=receipt_code)
+    return page(request, "apply_success.html", application_no=cast(MemberApplication, application).id, receipt_code=receipt_code)
 
 
 @router.get("/apply/status")
@@ -338,7 +339,7 @@ def admit_application(request: Request, id: int = Depends(object_id),
     password = secrets.token_urlsafe(12)
     password_hash = hash_password(password)
     transition_application(session, id, "已面试", "录取", status="已通过", active_flag=None)
-    application = session.get(MemberApplication, id)
+    application = cast(MemberApplication, session.get(MemberApplication, id))
     admitted = routes.ensure_member_for_application(session, application, local_time(), dept_id, password_hash)
     application.member_id = admitted.id
     audit(request, session, "application.admit", actor_id=member.id, target_id=id,

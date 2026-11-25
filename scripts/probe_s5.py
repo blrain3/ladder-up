@@ -33,7 +33,7 @@ from app.main import app
 from app.models import AuditLog, JobRun, Member, MemberAssessment, TestScore
 
 TOKEN_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
-results = []
+results: list[tuple[str, str, str]] = []
 
 
 def check(name, ok, detail=""):
@@ -76,6 +76,7 @@ with TestClient(app, headers={"Accept": "text/html"},
         test_id = test_row.id if test_row else 1
         demo1 = s.scalar(select(Member).where(Member.student_no == "demo0001"))
         demo2 = s.scalar(select(Member).where(Member.student_no == "demo0002"))
+        assert demo1 is not None and demo2 is not None
         demo1_id, demo2_id = demo1.id, demo2.id
 
     # 录分：首次
@@ -99,6 +100,7 @@ with TestClient(app, headers={"Accept": "text/html"},
     with SessionLocal(bind=engine) as s:
         rows_after = s.scalar(select(func.count()).select_from(TestScore))
         score = s.scalar(select(TestScore).where(TestScore.member_id == demo1_id))
+        assert score is not None
         audited = s.scalar(select(func.count()).select_from(AuditLog)
                            .where(AuditLog.action.like("score%update%")))
     check("重复录分覆盖而非新增", rows_before == rows_after, f"{rows_before} -> {rows_after}")
@@ -121,7 +123,7 @@ with TestClient(app, headers={"Accept": "text/html"},
         job_rows = s.scalars(select(JobRun).where(JobRun.job_name.like("assess%"))).all()
     check("assess 命令成功两次", r1.returncode == 0 and r2.returncode == 0,
           f"{r1.returncode}/{r2.returncode} {r1.stderr[-120:]}")
-    check("考核不因重跑新增（行数不变）", rows_first == assess_rows and rows_first >= 1,
+    check("考核不因重跑新增（行数不变）", rows_first == assess_rows and (rows_first or 0) >= 1,
           f"{rows_first} -> {assess_rows}")
     check("job_run 只一行", len(job_rows) == 1, f"rows={len(job_rows)}")
     check("job_run attempts 自增", getattr(job_rows[0], "attempts", 0) >= 2,
@@ -158,7 +160,9 @@ with TestClient(app, headers={"Accept": "text/html"},
     approved = client.post(f"/members/{demo2_id}/leave/approve",
                            data={"csrf_token": token(client)}, follow_redirects=False)
     with SessionLocal(bind=engine) as s:
-        status_after = s.get(Member, demo2_id).member_status
+        updated_member = s.get(Member, demo2_id)
+        assert updated_member is not None
+        status_after = updated_member.member_status
     check("退会审批后状态变更", approved.status_code == 200 and status_after == "已退会",
           f"status={status_after}")
     reviewer_sid = client.cookies["sid"]
@@ -181,6 +185,7 @@ with TestClient(app, headers={"Accept": "text/html"},
                            follow_redirects=False)
     with SessionLocal(bind=engine) as s:
         m1 = s.get(Member, demo1_id)
+        assert m1 is not None
         audited = s.scalar(select(func.count()).select_from(AuditLog)
                            .where(AuditLog.action.like("%expel%")))
     check("除名成功", ok_expel.status_code in (200, 303), f"got {ok_expel.status_code}")

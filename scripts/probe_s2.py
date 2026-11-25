@@ -35,7 +35,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 TOKEN_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
-results = []
+results: list[tuple[str, str, str]] = []
 
 
 def check(name, ok, detail=""):

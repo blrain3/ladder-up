@@ -1,10 +1,11 @@
 import secrets
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
+from typing import cast
 from zoneinfo import ZoneInfo
 
 from passlib.hash import bcrypt
-from sqlalchemy import select, update
+from sqlalchemy import CursorResult, select, update
 from sqlalchemy.orm import Session
 
 from .models import MemberSession
@@ -71,7 +72,7 @@ def revoke_session(token, *, session: Session, reason="logout"):
         MemberSession.token_hash == token_digest(token),
         MemberSession.revoked_at.is_(None),
     ).values(revoked_at=local_time(), revoke_reason=reason))
-    return result.rowcount == 1
+    return cast(CursorResult, result).rowcount == 1
 
 
 def revoke_all_sessions(member_id, except_token=None, reason="forced_logout", *, session: Session):

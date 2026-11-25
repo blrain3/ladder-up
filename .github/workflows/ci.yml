@@ -25,6 +25,8 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Lint
         run: ruff check app bin tests scripts
+      - name: Typecheck
+        run: make typecheck
       - name: Migrate from empty
         run: |
           mkdir -p data

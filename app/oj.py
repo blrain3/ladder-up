@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import AsyncGenerator
 from contextlib import aclosing, closing
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from datetime import datetime
 from io import StringIO
 from pathlib import Path
 from time import monotonic, sleep
+from typing import TypedDict, cast
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
@@ -134,7 +136,8 @@ async def read_cf_response(url, deadline):
     ) as client, client.stream("GET", url) as response:
         response.raise_for_status()
         body = bytearray()
-        async with aclosing(response.aiter_raw()) as chunks:
+        # HTTPX implements aiter_raw as an async generator with aclose().
+        async with aclosing(cast(AsyncGenerator[bytes], response.aiter_raw())) as chunks:
             async for chunk in chunks:
                 if monotonic() >= deadline:
                     raise FetchError("FETCH_TIMEOUT")
@@ -350,7 +353,7 @@ def parse_vjudge_csv(raw):
             raise OjError("表头不匹配")
     except OjError:
         raise OjError("表头须为 handle,problem,verdict,submitted_at") from None
-    parsed = []
+    parsed: list[tuple[int, tuple[str, str, dict[str, str]] | None, str | None]] = []
     # Each submission occupies one physical line so a malformed quote cannot swallow later rows.
     for line_number, line in enumerate(stream, 2):
         if line_number > MAX_CSV_LINES:
@@ -388,7 +391,7 @@ def store_vjudge_rows(session, parsed):
         )
     }
     problems = problem_ids(session, "vjudge", (entry[1] for _, entry, _ in parsed if entry))
-    errors = []
+    errors: list[dict[str, int | str | None]] = []
     rows = []
     for line, entry, reason in parsed:
         if entry is not None:
@@ -414,10 +417,18 @@ def import_vjudge_csv(session, raw, *, write, record=None):
         return report
 
 
+class _SyncResult(TypedDict):
+    created: int
+    skipped: int
+    errors: int
+    accounts_succeeded: int
+    error: str | None
+
+
 def sync_platform(session, platform, limit, *, renew_lease=None) -> dict:
     """Fetch accounts serially and commit each batch after its network request."""
     platform = sync_platform_name(platform)
-    result = {"created": 0, "skipped": 0, "errors": 0, "accounts_succeeded": 0, "error": None}
+    result: _SyncResult = {"created": 0, "skipped": 0, "errors": 0, "accounts_succeeded": 0, "error": None}
     enabled = bool(os.getenv("OJ_FIXTURE_PATH")) or sync_enabled(session)
     if not enabled:
         return {**result, "skip": "disabled"}
@@ -464,6 +475,6 @@ def sync_platform(session, platform, limit, *, renew_lease=None) -> dict:
             session.commit()
             result["created"] += created
             result["skipped"] += len(valid) - created
-        return result
+        return cast(dict, result)
     finally:
         _current_requests.reset(token)

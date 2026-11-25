@@ -5,9 +5,10 @@
 """
 
 from datetime import date, datetime
+from typing import TypedDict, cast
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
+from sqlalchemy import Table, func, select
 
 from .models import (
     Checkin,
@@ -69,7 +70,7 @@ def publish_task(session, task, rows) -> int:
     if task.assignee_type == ALL_MEMBERS:
         rows = [(MEMBER_ASSIGNEE, member.id) for member in _active_members(session)]
     session.execute(
-        TaskAssignee.__table__.delete().where(TaskAssignee.task_id == task.id)
+        cast(Table, TaskAssignee.__table__).delete().where(TaskAssignee.task_id == task.id)
     )
     session.flush()
     for assignee_type, assignee_id in rows:
@@ -92,7 +93,7 @@ def task_problem_total(session, task_id: int) -> int:
 
 def checkin_details(session, checkin_ids):
     """批量读取历史逐题明细，包括已软删题目。"""
-    details = {}
+    details: dict[int, list[dict[str, int | str | None]]] = {}
     if checkin_ids:
         rows = session.execute(
             select(CheckinProblem, Problem.title).join(Problem)
@@ -118,7 +119,7 @@ def task_progress(session, task_id: int, member_id: int) -> dict:
     active_ids = set(session.scalars(select(TaskProblem.problem_id).join(Problem).where(
         TaskProblem.task_id == task_id, Problem.deleted_at.is_(None),
     )))
-    solved_ids = set()
+    solved_ids: set[int] = set()
     details = checkin_details(session, [row.id for row in checkins])
     checkin_items = []
     for checkin in checkins:
@@ -194,20 +195,37 @@ def progress_query(phase_id, *, member_ids=None, today=None):
     )
     if today is not None:
         records = records.join(TrainingTask).where(Checkin.checkin_date.between(start, end))
-    records = records.group_by(Checkin.task_id, Checkin.member_id).subquery()
+    records_by_member = records.group_by(Checkin.task_id, Checkin.member_id).subquery()
     return (
         select(TrainingTask, pairs.c.member_id, func.coalesce(totals.c.total, 0).label("total"),
                func.coalesce(solved.c.solved, 0).label("solved"),
-               func.coalesce(records.c.checkin_count, 0).label("checkin_count"), records.c.last_date)
+               func.coalesce(records_by_member.c.checkin_count, 0).label("checkin_count"), records_by_member.c.last_date)
         .select_from(pairs).join(TrainingTask, TrainingTask.id == pairs.c.task_id)
         .outerjoin(totals, totals.c.task_id == pairs.c.task_id)
         .outerjoin(solved, (solved.c.task_id == pairs.c.task_id) & (solved.c.member_id == pairs.c.member_id))
-        .outerjoin(records, (records.c.task_id == pairs.c.task_id) & (records.c.member_id == pairs.c.member_id))
+        .outerjoin(records_by_member, (records_by_member.c.task_id == pairs.c.task_id)
+                   & (records_by_member.c.member_id == pairs.c.member_id))
     )
 
 
+class _TaskSummary(TypedDict):
+    id: int
+    phase_id: int
+    phase_name: str
+    title: str
+    assignee_type: str
+    deadline_at: str | None
+    status: str
+    published_at: str | None
+    total: int
+    solved: int
+    rate: float
+    last_date: str | None
+    checkin_count: int
+
+
 def member_summaries(session, member_ids, phase_id, *, task_offset=0, task_limit=None):
-    items = {member_id: [] for member_id in member_ids}
+    items: dict[int, list[_TaskSummary]] = {member_id: [] for member_id in member_ids}
     statement = progress_query(phase_id, member_ids=member_ids).add_columns(TrainingPhase.name).join(
         TrainingPhase, TrainingPhase.id == TrainingTask.phase_id
     ).order_by(TrainingTask.id).offset(task_offset).limit(task_limit)
